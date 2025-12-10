@@ -187,12 +187,15 @@ const Dashboard = () => {
                         style={{
                             padding: '1.5rem', flexDirection: 'column', gap: '0.5rem',
                             borderRadius: 'var(--radius-md)',
-                            border: activeTab === tab.id ? '1px solid var(--accent-primary)' : '1px solid transparent',
-                            background: activeTab === tab.id ? 'var(--bg-card)' : 'rgba(255,255,255,0.02)'
+                            border: activeTab === tab.id ? '1px solid var(--accent-primary)' : '1px solid rgba(255,255,255,0.1)',
+                            background: activeTab === tab.id ? 'rgba(251, 191, 36, 0.1)' : 'rgba(255,255,255,0.03)',
+                            color: activeTab === tab.id ? '#fff' : 'var(--text-secondary)',
+                            textShadow: activeTab === tab.id ? '0 0 10px rgba(251, 191, 36, 0.8)' : 'none',
+                            transition: 'all 0.3s ease'
                         }}
                     >
                         <tab.icon size={24} color={activeTab === tab.id ? 'var(--accent-primary)' : 'var(--text-secondary)'} />
-                        <span style={{ fontWeight: 'bold' }}>{tab.label}</span>
+                        <span style={{ fontWeight: '800', fontSize: '1.1rem', letterSpacing: '0.5px' }}>{tab.label}</span>
                     </button>
                 ))}
             </div>
