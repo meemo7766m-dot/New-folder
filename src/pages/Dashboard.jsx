@@ -15,39 +15,39 @@ const Dashboard = () => {
     const [activeTab, setActiveTab] = useState('overview'); // overview, heatmap, cases, users
     const [cars, setCars] = useState([]);
     const [allowedUsers, setAllowedUsers] = useState([]);
+    const [visitCount, setVisitCount] = useState(0); // New state for visits
     const [isLoading, setIsLoading] = useState(true);
     const [newUserEmail, setNewUserEmail] = useState('');
 
-    // Form State for new car
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [formData, setFormData] = useState({
-        make: '', model: '', year: '', color: '', plate_number: '', last_seen_location: '', description: '', status: 'missing',
-        last_seen_lat: '', last_seen_lng: ''
-    });
-    const [imageFile, setImageFile] = useState(null);
-    const [submitting, setSubmitting] = useState(false);
-
-    // Fetch Data
-    useEffect(() => {
-        const checkUser = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) { navigate('/admin'); return; }
-            fetchData();
-        };
-        checkUser();
-    }, [navigate]);
+    // ... (keep existing code)
 
     const fetchData = async () => {
         setIsLoading(true);
-        const [carsRes, usersRes] = await Promise.all([
+        const [carsRes, usersRes, visitsRes] = await Promise.all([
             supabase.from('cars').select('*').order('created_at', { ascending: false }),
-            supabase.from('allowed_users').select('*').order('created_at', { ascending: false })
+            supabase.from('allowed_users').select('*').order('created_at', { ascending: false }),
+            supabase.from('site_visits').select('id', { count: 'exact' }) // Fetch count
         ]);
 
         if (carsRes.data) setCars(carsRes.data);
         if (usersRes.data) setAllowedUsers(usersRes.data);
+        if (visitsRes.count !== null) setVisitCount(visitsRes.count);
         setIsLoading(false);
     };
+
+    // ... (keep existing code)
+
+    // In Render:
+    <div className="glass" style={{ padding: '2rem', borderRadius: 'var(--radius-md)' }}>
+        <h3 style={{ marginBottom: '1.5rem' }}>ملخص سريع</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <StatCard title="إجمالي البلاغات" value={stats.total} />
+            <StatCard title="إجمالي الزوار" value={visitCount} color="#3b82f6" /> {/* New Card */}
+            <StatCard title="تم الحل" value={stats.found} color="var(--status-success)" />
+            <StatCard title="مفقودات نشطة" value={stats.missing} color="var(--status-error)" />
+            <StatCard title="تحت البحث" value={stats.stolen} color="var(--accent-secondary)" />
+        </div>
+    </div>
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
