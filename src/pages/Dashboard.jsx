@@ -95,46 +95,99 @@ const Dashboard = () => {
     };
 
     const printDailyReport = () => {
-        try {
-            const doc = new jsPDF();
+        const today = new Date().toISOString().split('T')[0];
+        const todaysCars = cars.filter(car => car.created_at && car.created_at.startsWith(today));
 
-            // Title
-            doc.setFontSize(22);
-            doc.text("Daily Report", 105, 20, { align: 'center' });
-            doc.setFontSize(12);
-            doc.text(`Date: ${new Date().toLocaleDateString()}`, 105, 30, { align: 'center' });
-
-            // Filter today's cars
-            const today = new Date().toISOString().split('T')[0];
-            const todaysCars = cars.filter(car => car.created_at && car.created_at.startsWith(today));
-
-            if (todaysCars.length === 0) {
-                alert("لم يتم العثور على بلاغات لهذا اليوم.");
-                // Still generate the PDF with header
-            }
-
-            // Summary Stats
-            doc.setFontSize(14);
-            doc.text(`Total New Reports Today: ${todaysCars.length}`, 14, 50);
-
-            // Table
-            const tableColumn = ["Make", "Model", "Plate", "Status", "Time"];
-            const tableRows = [];
-
-            todaysCars.forEach(car => {
-                const time = new Date(car.created_at).toLocaleTimeString();
-                tableRows.push([
-                    car.make, car.model, car.plate_number, car.status, time
-                ]);
-            });
-
-            doc.autoTable(tableColumn, tableRows, { startY: 70 });
-            doc.save(`daily_report_${today}.pdf`);
-
-        } catch (error) {
-            console.error("Error generating report:", error);
-            alert("حدث خطأ أثناء إنشاء التقرير: " + error.message);
+        if (todaysCars.length === 0) {
+            alert("لم يتم العثور على بلاغات لهذا اليوم لطباعتها.");
+            return;
         }
+
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            alert("يرجى السماح بالنوافذ المنبثقة (Pop-ups) لطباعة التقرير.");
+            return;
+        }
+
+        const htmlContent = `
+            <!DOCTYPE html>
+            <html dir="rtl" lang="ar">
+            <head>
+                <title>التقرير اليومي - ${today}</title>
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap');
+                    body { font-family: 'Tajawal', sans-serif; padding: 40px; }
+                    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 20px; }
+                    .title { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
+                    .date { font-size: 16px; color: #666; }
+                    .stats { display: flex; justify-content: space-around; margin-bottom: 30px; background: #f9fafb; padding: 20px; border-radius: 8px; border: 1px solid #ddd; }
+                    .stat-item { text-align: center; }
+                    .stat-value { font-size: 20px; font-weight: bold; color: #2563eb; }
+                    .stat-label { font-size: 14px; color: #555; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    th, td { border: 1px solid #ddd; padding: 12px; text-align: right; }
+                    th { background-color: #f3f4f6; font-weight: bold; }
+                    tr:nth-child(even) { background-color: #f9fafb; }
+                    .footer { margin-top: 50px; text-align: center; font-size: 12px; color: #999; border-top: 1px solid #eee; padding-top: 20px; }
+                    @media print {
+                        body { padding: 0; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <div class="title">تقرير البلاغات اليومي</div>
+                    <div class="date">التاريخ: ${new Date().toLocaleDateString('ar-EG')}</div>
+                </div>
+
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-value">${todaysCars.length}</div>
+                        <div class="stat-label">بلاغات جديدة</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${todaysCars.filter(c => c.status === 'found').length}</div>
+                        <div class="stat-label">تم العثور عليها</div>
+                    </div>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>المركبة</th>
+                            <th>رقم اللوحة</th>
+                            <th>الحالة</th>
+                            <th>الموقع</th>
+                            <th>الوقت</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${todaysCars.map(car => `
+                            <tr>
+                                <td>${car.make} ${car.model} (${car.year || '-'})</td>
+                                <td>${car.plate_number}</td>
+                                <td>${car.status === 'missing' ? 'مفقود' : car.status === 'found' ? 'تم العثور عليه' : 'مسروق'}</td>
+                                <td>${car.last_seen_location || '-'}</td>
+                                <td>${new Date(car.created_at).toLocaleTimeString('ar-EG')}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                <div class="footer">
+                    تم استخراج هذا التقرير آلياً من منصة "مفقودات السودان" بتاريخ ${new Date().toLocaleString('ar-EG')}
+                </div>
+
+                <script>
+                    window.onload = function() { window.print(); }
+                </script>
+            </body>
+            </html>
+        `;
+
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
     };
 
     // Handlers
