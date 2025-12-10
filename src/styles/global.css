@@ -138,44 +138,52 @@ button {
   gap: 0.75rem;
   padding: 0.8rem 2rem;
   border-radius: var(--radius-md);
-  font-weight: 700;
-  letter-spacing: 0.5px;
+  font-weight: 800;
+  /* Extra Bold for luxury */
+  letter-spacing: 1px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
   z-index: 1;
+  text-transform: uppercase;
 }
 
-/* Neon Glass Button */
+/* Neon Glass Button - Luxury Gold Text */
 .btn-primary {
-  background: rgba(251, 191, 36, 0.1);
-  /* Transparent Amber */
-  color: var(--accent-primary);
+  background: rgba(251, 191, 36, 0.15);
+  color: #ffffff;
+  /* Pure Luxurious White */
   border: 1px solid var(--accent-primary);
-  box-shadow: 0 0 15px rgba(251, 191, 36, 0.2), inset 0 0 10px rgba(251, 191, 36, 0.1);
+  box-shadow: 0 0 15px rgba(251, 191, 36, 0.3), inset 0 0 10px rgba(251, 191, 36, 0.1);
   backdrop-filter: blur(4px);
+  text-shadow: 0 0 10px rgba(251, 191, 36, 1);
+  /* Intense Gold Glow */
 }
 
 .btn-primary:hover {
-  background: rgba(251, 191, 36, 0.2);
+  background: rgba(251, 191, 36, 0.25);
   color: #fff;
   border-color: #fff;
-  box-shadow: 0 0 25px rgba(251, 191, 36, 0.5), inset 0 0 20px rgba(251, 191, 36, 0.2);
-  transform: translateY(-2px);
-  text-shadow: 0 0 8px rgba(251, 191, 36, 0.8);
+  box-shadow: 0 0 30px rgba(251, 191, 36, 0.6), inset 0 0 20px rgba(251, 191, 36, 0.2);
+  transform: translateY(-2px) scale(1.02);
+  text-shadow: 0 0 15px rgba(251, 191, 36, 1);
 }
 
 .btn-outline {
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #e2e8f0;
+  /* Platinum Silver */
+  background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(4px);
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
 }
 
 .btn-outline:hover {
-  border-color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+  border-color: #fff;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.9);
 }
 
 /* Inputs */
