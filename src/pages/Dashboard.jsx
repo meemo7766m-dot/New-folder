@@ -95,37 +95,46 @@ const Dashboard = () => {
     };
 
     const printDailyReport = () => {
-        const doc = new jsPDF();
+        try {
+            const doc = new jsPDF();
 
-        // Title
-        doc.setFontSize(22);
-        doc.text("Daily Report", 105, 20, { align: 'center' });
-        doc.setFontSize(12);
-        doc.text(`Date: ${new Date().toLocaleDateString()}`, 105, 30, { align: 'center' });
+            // Title
+            doc.setFontSize(22);
+            doc.text("Daily Report", 105, 20, { align: 'center' });
+            doc.setFontSize(12);
+            doc.text(`Date: ${new Date().toLocaleDateString()}`, 105, 30, { align: 'center' });
 
-        // Filter today's cars
-        const today = new Date().toISOString().split('T')[0];
-        const todaysCars = cars.filter(car => car.created_at && car.created_at.startsWith(today));
-        const foundToday = cars.filter(car => car.status === 'found' && car.updated_at && car.updated_at.startsWith(today)); // Assuming updated_at exists or logic appox
+            // Filter today's cars
+            const today = new Date().toISOString().split('T')[0];
+            const todaysCars = cars.filter(car => car.created_at && car.created_at.startsWith(today));
 
-        // Summary Stats
-        doc.setFontSize(14);
-        doc.text(`Total New Reports Today: ${todaysCars.length}`, 14, 50);
-        // doc.text(`Found Today: ${foundToday.length}`, 14, 60); // Optional if we track found time
+            if (todaysCars.length === 0) {
+                alert("لم يتم العثور على بلاغات لهذا اليوم.");
+                // Still generate the PDF with header
+            }
 
-        // Table
-        const tableColumn = ["Make", "Model", "Plate", "Status", "Time"];
-        const tableRows = [];
+            // Summary Stats
+            doc.setFontSize(14);
+            doc.text(`Total New Reports Today: ${todaysCars.length}`, 14, 50);
 
-        todaysCars.forEach(car => {
-            const time = new Date(car.created_at).toLocaleTimeString();
-            tableRows.push([
-                car.make, car.model, car.plate_number, car.status, time
-            ]);
-        });
+            // Table
+            const tableColumn = ["Make", "Model", "Plate", "Status", "Time"];
+            const tableRows = [];
 
-        doc.autoTable(tableColumn, tableRows, { startY: 70 });
-        doc.save(`daily_report_${today}.pdf`);
+            todaysCars.forEach(car => {
+                const time = new Date(car.created_at).toLocaleTimeString();
+                tableRows.push([
+                    car.make, car.model, car.plate_number, car.status, time
+                ]);
+            });
+
+            doc.autoTable(tableColumn, tableRows, { startY: 70 });
+            doc.save(`daily_report_${today}.pdf`);
+
+        } catch (error) {
+            console.error("Error generating report:", error);
+            alert("حدث خطأ أثناء إنشاء التقرير: " + error.message);
+        }
     };
 
     // Handlers

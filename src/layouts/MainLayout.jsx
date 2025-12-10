@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { Toaster } from 'react-hot-toast';
+import AIAssistant from '../components/AIAssistant';
 
 const MainLayout = () => {
     return (
@@ -18,6 +19,7 @@ const MainLayout = () => {
                     border: '1px solid rgba(255,255,255,0.1)'
                 }
             }} />
+            <AIAssistant />
         </div>
     );
 };
