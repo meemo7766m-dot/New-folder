@@ -18,8 +18,10 @@ const Dashboard = () => {
     const [visitCount, setVisitCount] = useState(0); // New state for visits
     const [isLoading, setIsLoading] = useState(true);
     const [newUserEmail, setNewUserEmail] = useState('');
-
-    // ... (keep existing code)
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [formData, setFormData] = useState({ make: '', model: '', year: '', color: '', plate_number: '', last_seen_location: '', description: '', status: 'missing', last_seen_lat: '', last_seen_lng: '' });
+    const [imageFile, setImageFile] = useState(null);
+    const [submitting, setSubmitting] = useState(false);
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -39,6 +41,18 @@ const Dashboard = () => {
 
 
 
+
+    useEffect(() => {
+        const checkUser = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                navigate('/admin');
+            } else {
+                fetchData();
+            }
+        };
+        checkUser();
+    }, [navigate]);
 
     const handleLogout = async () => {
         await supabase.auth.signOut();

@@ -120,6 +120,7 @@ button {
 .text-gradient {
   background: linear-gradient(135deg, #fff 20%, var(--accent-primary) 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.3));
 }
@@ -127,6 +128,7 @@ button {
 .accent-gradient {
   background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
