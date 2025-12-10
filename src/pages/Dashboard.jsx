@@ -37,17 +37,59 @@ const Dashboard = () => {
 
     // ... (keep existing code)
 
-    // In Render:
-    <div className="glass" style={{ padding: '2rem', borderRadius: 'var(--radius-md)' }}>
-        <h3 style={{ marginBottom: '1.5rem' }}>ملخص سريع</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <StatCard title="إجمالي البلاغات" value={stats.total} />
-            <StatCard title="إجمالي الزوار" value={visitCount} color="#3b82f6" /> {/* New Card */}
-            <StatCard title="تم الحل" value={stats.found} color="var(--status-success)" />
-            <StatCard title="مفقودات نشطة" value={stats.missing} color="var(--status-error)" />
-            <StatCard title="تحت البحث" value={stats.stolen} color="var(--accent-secondary)" />
-        </div>
-    </div>
+    // Handlers
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        navigate('/admin');
+    };
+
+    // Stats Calculation
+    const stats = {
+        total: cars.length,
+        missing: cars.filter(c => c.status === 'missing').length,
+        found: cars.filter(c => c.status === 'found').length,
+        stolen: cars.filter(c => c.status === 'stolen').length,
+    };
+
+    const chartData = [
+        { name: 'مفقود', value: stats.missing, fill: '#ef4444' },
+        { name: 'مسروق', value: stats.stolen, fill: '#ff9800' },
+        { name: 'تم العثور عليه', value: stats.found, fill: '#10b981' },
+    ];
+
+    // Export Functions
+    const exportExcel = () => {
+        const ws = XLSX.utils.json_to_sheet(cars);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Cars");
+        XLSX.writeFile(wb, "missing_cars_report.xlsx");
+    };
+
+    const exportPDF = () => {
+        const doc = new jsPDF();
+        doc.text("Missing Cars Report", 14, 15);
+
+        const tableColumn = ["Make", "Model", "Year", "Color", "Plate", "Status", "Location"];
+        const tableRows = [];
+
+        cars.forEach(car => {
+            const carData = [
+                car.make, car.model, car.year, car.color, car.plate_number, car.status, car.last_seen_location
+            ];
+            tableRows.push(carData);
+        });
+
+        doc.autoTable(tableColumn, tableRows, { startY: 20 });
+        doc.save("missing_cars_report.pdf");
+    };
+
+    // ... (skipping to render update)
+
+    // In the ReplaceFileContent, I cannot skip lines effectively if I am targeting a large block.
+    // The broken block is at lines 40-50.
+    // I will just DELETE lines 40-50 first. 
+    // Then I will update the render section separately.
+
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
@@ -319,6 +361,7 @@ const Dashboard = () => {
                         <h3 style={{ marginBottom: '1.5rem' }}>ملخص سريع</h3>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                             <StatCard title="إجمالي البلاغات" value={stats.total} />
+                            <StatCard title="إجمالي الزوار" value={visitCount} color="#3b82f6" />
                             <StatCard title="تم الحل" value={stats.found} color="var(--status-success)" />
                             <StatCard title="مفقودات نشطة" value={stats.missing} color="var(--status-error)" />
                             <StatCard title="تحت البحث" value={stats.stolen} color="var(--accent-secondary)" />
