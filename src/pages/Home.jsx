@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
-import { Search, ArrowRight, MapPin, Calendar } from 'lucide-react';
+import { Search, ArrowRight, MapPin, Calendar, ShieldCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { motion } from 'framer-motion';
 
 const Home = () => {
     const [recentCars, setRecentCars] = useState([]);
@@ -42,33 +43,79 @@ const Home = () => {
             {/* Hero Section */}
             <section style={{
                 padding: '8rem 0',
-                background: 'radial-gradient(circle at center, #1a1d23 0%, #090a0b 100%)',
-                textAlign: 'center'
+                background: 'radial-gradient(circle at center, #0f172a 0%, #02040a 100%)',
+                textAlign: 'center',
+                position: 'relative',
+                overflow: 'hidden'
             }}>
-                <div className="container">
-                    <h1 style={{
-                        fontSize: 'clamp(2.5rem, 5vw, 4rem)',
-                        fontWeight: 700,
-                        lineHeight: 1.1,
-                        marginBottom: '1.5rem'
-                    }}>
-                        ابحث عن <span className="text-gradient">السيارات المفقودة</span> <br />
-                        في السودان
-                    </h1>
-                    <p style={{
-                        color: 'var(--text-secondary)',
-                        fontSize: '1.25rem',
-                        maxWidth: '600px',
-                        margin: '0 auto 2.5rem'
-                    }}>
-                        منصة مركزية للإبلاغ عن المركبات المفقودة وتتبعها واستعادتها في جميع أنحاء البلاد.
-                    </p>
+                {/* Background Glows */}
+                <div style={{ position: 'absolute', top: '-10%', left: '10%', width: '300px', height: '300px', background: 'var(--accent-primary)', filter: 'blur(150px)', opacity: 0.1, borderRadius: '50%' }}></div>
+                <div style={{ position: 'absolute', bottom: '-10%', right: '10%', width: '400px', height: '400px', background: 'var(--status-success)', filter: 'blur(150px)', opacity: 0.05, borderRadius: '50%' }}></div>
 
-                    <div className="flex-center" style={{ gap: '1rem', flexWrap: 'wrap' }}>
-                        <Link to="/search" className="btn btn-primary">
-                            <Search size={20} style={{ marginLeft: '0.5rem' }} /> البحث في السجلات
+                <div className="container" style={{ position: 'relative', zIndex: 2 }}>
+                    <motion.div
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8 }}
+                    >
+                        <h1 style={{
+                            fontSize: 'clamp(2.5rem, 5vw, 4.5rem)',
+                            fontWeight: 800,
+                            lineHeight: 1.1,
+                            marginBottom: '1.5rem',
+                            letterSpacing: '-1px'
+                        }}>
+                            <span className="text-gradient">أقوى منصة ذكية</span> <br />
+                            للبحث عن المفقودات بالسودان
+                        </h1>
+                    </motion.div>
+
+                    <motion.p
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8, delay: 0.2 }}
+                        style={{
+                            color: 'var(--text-secondary)',
+                            fontSize: '1.25rem',
+                            maxWidth: '650px',
+                            margin: '0 auto 2.5rem',
+                            lineHeight: '1.8'
+                        }}
+                    >
+                        باستخدام تقنيات الذكاء الاصطناعي والخرائط التفاعلية، نساعدك في الإبلاغ عن المركبات المفقودة واستعادتها بسرعة وأمان.
+                    </motion.p>
+
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.5, delay: 0.4 }}
+                        className="flex-center"
+                        style={{ gap: '1rem', flexWrap: 'wrap' }}
+                    >
+                        <Link to="/search" className="btn btn-primary" style={{ padding: '1rem 2rem', fontSize: '1.1rem' }}>
+                            <Search size={22} style={{ marginLeft: '0.5rem' }} /> البحث في السجلات
                         </Link>
-                    </div>
+                        <Link to="/admin" className="btn btn-outline" style={{ padding: '1rem 2rem', fontSize: '1.1rem' }}>
+                            <ShieldCheck size={22} style={{ marginLeft: '0.5rem' }} /> إبلاغ عن حالة
+                        </Link>
+                    </motion.div>
+
+                    {/* Stats or Trust Badges (Animated) */}
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 1, delay: 0.8 }}
+                        style={{ marginTop: '4rem', display: 'flex', gap: '3rem', justifyContent: 'center', opacity: 0.7 }}
+                    >
+                        <div>
+                            <h3 style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--accent-primary)' }}>+500</h3>
+                            <span style={{ fontSize: '0.9rem' }}>بلاغ نشط</span>
+                        </div>
+                        <div>
+                            <h3 style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--status-success)' }}>+120</h3>
+                            <span style={{ fontSize: '0.9rem' }}>تم العثور عليها</span>
+                        </div>
+                    </motion.div>
                 </div>
             </section>
 

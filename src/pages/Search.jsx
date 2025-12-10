@@ -2,6 +2,7 @@ import { Search as SearchIcon, Filter, MapPin, Calendar, Layers, List as ListIco
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useNavigate } from 'react-router-dom';
@@ -284,38 +285,54 @@ const Search = () => {
                     ) : (
                         /* MAP VIEW */
                         <div className="glass" style={{ height: '600px', borderRadius: 'var(--radius-md)', overflow: 'hidden', position: 'relative' }}>
-                            <MapContainer center={[15.5007, 32.5599]} zoom={12} style={{ height: '100%', width: '100%' }}>
+                            <MapContainer center={[15.5007, 32.5599]} zoom={6} style={{ height: '100%', width: '100%' }}>
                                 <TileLayer
                                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                                 />
-                                {cars.map(car => (
-                                    /* Only show markers if latch/lng exist. For now using random offset near Khartoum if missing for demo, 
-                                       but in real app strictly check car.lat && car.lng */
-                                    (car.last_seen_lat || car.last_seen_location === 'Khartoum') && (
-                                        <Marker
-                                            key={car.id}
-                                            position={[
-                                                car.last_seen_lat || 15.5007 + (Math.random() * 0.1 - 0.05),
-                                                car.last_seen_lng || 32.5599 + (Math.random() * 0.1 - 0.05)
-                                            ]}
-                                        >
-                                            <Popup>
-                                                <div style={{ textAlign: 'right' }}>
-                                                    <strong>{car.make} {car.model}</strong><br />
-                                                    {car.plate_number}<br />
-                                                    <a href={`/car/${car.id}`} style={{ color: 'blue' }}>التفاصيل</a>
-                                                </div>
-                                            </Popup>
-                                        </Marker>
-                                    )
-                                ))}
+                                <MarkerClusterGroup
+                                    chunkedLoading
+                                    iconCreateFunction={(cluster) => {
+                                        return L.divIcon({
+                                            html: `<div style="background:var(--accent-primary);color:#000;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-weight:bold;border:2px solid #fff;">${cluster.getChildCount()}</div>`,
+                                            className: 'custom-cluster-icon',
+                                            iconSize: L.point(30, 30, true),
+                                        });
+                                    }}
+                                >
+                                    {cars.map(car => (
+                                        (car.last_seen_lat || car.last_seen_location === 'Khartoum') && (
+                                            <Marker
+                                                key={car.id}
+                                                position={[
+                                                    car.last_seen_lat || 15.5007 + (Math.random() * 0.5),
+                                                    car.last_seen_lng || 32.5599 + (Math.random() * 0.5)
+                                                ]}
+                                                icon={L.divIcon({
+                                                    className: 'custom-icon',
+                                                    html: `<div style="
+                                                        background-color: ${car.status === 'missing' ? '#ef4444' : car.status === 'found' ? '#10b981' : '#f97316'};
+                                                        width: 16px; height: 16px; border-radius: 50%;
+                                                        border: 2px solid white; box-shadow: 0 0 10px ${car.status === 'missing' ? '#ef4444' : '#10b981'};
+                                                    "></div>`,
+                                                    iconSize: [20, 20],
+                                                    iconAnchor: [10, 10]
+                                                })}
+                                            >
+                                                <Popup>
+                                                    <div style={{ textAlign: 'right', direction: 'rtl' }}>
+                                                        <strong>{car.make} {car.model}</strong><br />
+                                                        <span style={{ fontSize: '0.8rem', color: '#666' }}>{car.plate_number}</span><br />
+                                                        <button onClick={() => navigate(`/car/${car.id}`)} style={{ marginTop: '0.5rem', color: 'blue', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
+                                                            التفاصيل &larr;
+                                                        </button>
+                                                    </div>
+                                                </Popup>
+                                            </Marker>
+                                        )
+                                    ))}
+                                </MarkerClusterGroup>
                             </MapContainer>
-                            {!loading && cars.length === 0 && (
-                                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'rgba(0,0,0,0.7)', padding: '1rem', borderRadius: '8px', zIndex: 1000 }}>
-                                    لا توجد نتائج للعرض على الخريطة
-                                </div>
-                            )}
                         </div>
                     )}
                 </div>

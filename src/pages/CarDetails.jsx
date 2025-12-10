@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { Clock, MapPin, Calendar, FileText, Camera, Shield, MessageSquare, ChevronLeft, CreditCard } from 'lucide-react';
+import SmartMatch from '../components/SmartMatch';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -92,6 +93,9 @@ const CarDetails = () => {
                     </div>
                 </div>
             </div>
+
+            {/* AI Smart Match Section */}
+            <SmartMatch car={car} />
 
             {/* Tabs Navigation */}
             <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border-color)', marginBottom: '2rem', overflowX: 'auto' }}>
