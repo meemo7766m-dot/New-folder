@@ -8,6 +8,7 @@ import 'leaflet/dist/leaflet.css';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import ReportViewer from '../components/ReportViewer';
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -177,6 +178,7 @@ const Dashboard = () => {
                     { id: 'heatmap', label: 'الخريطة الحرارية', icon: MapIcon },
                     { id: 'cases', label: 'إدارة البلاغات', icon: List },
                     { id: 'users', label: 'المشرفين', icon: Users },
+                    { id: 'reports', label: 'البلاغات السرية', icon: Shield },
                 ].map(tab => (
                     <button
                         key={tab.id}
@@ -334,6 +336,11 @@ const Dashboard = () => {
                         ))}
                     </div>
                 </div>
+            )}
+
+            {/* Active Tab: Reports */}
+            {activeTab === 'reports' && (
+                <ReportViewer />
             )}
 
             {/* Add Modal */}

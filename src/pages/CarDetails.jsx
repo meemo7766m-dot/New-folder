@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { Clock, MapPin, Calendar, FileText, Camera, Shield, MessageSquare, ChevronLeft, CreditCard } from 'lucide-react';
 import SmartMatch from '../components/SmartMatch';
+import toast from 'react-hot-toast';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -217,22 +218,46 @@ const CarDetails = () => {
                             <h2>هل لديك معلومة؟</h2>
                             <p style={{ color: 'var(--text-secondary)' }}>مساهمتك قد تساعد في استعادة هذه المركبة. هويتك ستبقى سرية تماماً.</p>
                         </div>
-                        <form onSubmit={(e) => { e.preventDefault(); alert('شكراً لمساهمتك! سيتم التحقق من المعلومة.'); }}>
+                        <form onSubmit={async (e) => {
+                            e.preventDefault();
+                            const form = e.target;
+                            const formData = new FormData(form);
+
+                            const report = {
+                                car_id: car.id,
+                                report_type: formData.get('report_type'),
+                                description: formData.get('description'),
+                                contact_info: formData.get('contact_info')
+                            };
+
+                            const toastId = toast.loading('جاري إرسال المعلومات...');
+
+                            try {
+                                const { error } = await supabase.from('case_reports').insert([report]);
+                                if (error) throw error;
+
+                                toast.success('تم إرسال المعلومات بسرية تامة. شكراً لمساهمتك!', { id: toastId });
+                                form.reset();
+                            } catch (err) {
+                                console.error(err);
+                                toast.error('حدث خطأ أثناء الإرسال. يرجى المحاولة لاحقاً.', { id: toastId });
+                            }
+                        }}>
                             <div style={{ marginBottom: '1rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>نوع المعلومة</label>
-                                <select className="input-field" style={{ width: '100%' }}>
-                                    <option>شاهدت المركبة في مكان ما</option>
-                                    <option>لدي معلومات عن الشخص المشتبه به</option>
-                                    <option>أخرى</option>
+                                <select name="report_type" className="input-field" style={{ width: '100%' }} required>
+                                    <option value="sighting">شاهدت المركبة في مكان ما</option>
+                                    <option value="suspect">لدي معلومات عن الشخص المشتبه به</option>
+                                    <option value="other">أخرى</option>
                                 </select>
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>التفاصيل</label>
-                                <textarea className="input-field" rows="4" style={{ width: '100%' }} placeholder="اكتب كل ما تعرفه هنا..."></textarea>
+                                <textarea name="description" className="input-field" rows="4" style={{ width: '100%' }} placeholder="اكتب كل ما تعرفه هنا..." required></textarea>
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>رقم للتواصل (اختياري)</label>
-                                <input type="text" className="input-field" style={{ width: '100%' }} placeholder="سيتم التواصل معك للضرورة فقط" />
+                                <input name="contact_info" type="text" className="input-field" style={{ width: '100%' }} placeholder="سيتم التواصل معك للضرورة فقط" />
                             </div>
                             <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>إرسال المعلومة بسرية</button>
                         </form>
