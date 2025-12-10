@@ -1,10 +1,11 @@
-import { Link } from 'react-router-dom';
-import { Search, ArrowRight, MapPin, Calendar, ShieldCheck } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Search, ArrowRight, MapPin, Calendar, ShieldCheck, FileText } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { motion } from 'framer-motion';
 
 const Home = () => {
+    const navigate = useNavigate();
     const [recentCars, setRecentCars] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -137,7 +138,14 @@ const Home = () => {
                             <p style={{ color: 'var(--text-secondary)' }}>جاري تحميل البلاغات...</p>
                         ) : recentCars.length > 0 ? (
                             recentCars.map((car) => (
-                                <div key={car.id} className="glass" style={{ borderRadius: 'var(--radius-md)', overflow: 'hidden', transition: 'transform 0.2s', cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
+                                <div
+                                    key={car.id}
+                                    className="glass"
+                                    style={{ borderRadius: 'var(--radius-md)', overflow: 'hidden', transition: 'transform 0.2s', cursor: 'pointer' }}
+                                    onClick={() => navigate(`/car/${car.id}`)}
+                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                                >
                                     <div style={{ height: '200px', background: '#2a2d35', position: 'relative' }}>
                                         {car.image_url ? (
                                             <img src={car.image_url} alt={`${car.make} ${car.model}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -146,23 +154,29 @@ const Home = () => {
                                         )}
                                         <span style={{
                                             position: 'absolute', top: '10px', right: '10px',
-                                            background: 'rgba(0,0,0,0.6)', color: '#fff',
-                                            padding: '0.25rem 0.75rem', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem'
+                                            padding: '4px 10px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold',
+                                            background: car.status === 'found' ? 'var(--status-success)' : car.status === 'missing' ? 'var(--status-error)' : 'var(--accent-secondary)',
+                                            color: '#fff'
                                         }}>
                                             {translateStatus(car.status)}
                                         </span>
                                     </div>
                                     <div style={{ padding: '1.5rem' }}>
-                                        <h3 style={{ marginBottom: '0.5rem' }}>{car.year} {car.make} {car.model}</h3>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                                            <div className="flex-center" style={{ justifyContent: 'flex-start', gap: '0.5rem' }}>
+                                        <h3 style={{ marginBottom: '0.2rem' }}>{car.year} {car.make} {car.model}</h3>
+                                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>س.م {car.plate_number}</p>
+
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                 <MapPin size={16} color="var(--accent-primary)" />
                                                 <span>{car.last_seen_location || 'الموقع غير معروف'}</span>
                                             </div>
-                                            <div className="flex-center" style={{ justifyContent: 'flex-start', gap: '0.5rem' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                 <Calendar size={16} color="var(--accent-primary)" />
                                                 <span>{car.last_seen_date || 'التاريخ غير معروف'}</span>
                                             </div>
+                                            <button className="btn btn-outline" style={{ marginTop: '1rem', width: '100%', justifyContent: 'center' }}>
+                                                عرض التفاصيل الكاملة
+                                            </button>
                                         </div>
                                     </div>
                                 </div>

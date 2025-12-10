@@ -6,8 +6,8 @@
   /* Ultra Dark Blue */
   --bg-secondary: #0f172a;
   /* Deep Navy */
-  --bg-card: rgba(15, 23, 42, 0.6);
-  /* Glassy Navy */
+  --bg-card: rgba(15, 23, 42, 0.3);
+  /* Glassy Navy (More Transparent) */
 
   --text-primary: #ffffff;
   --text-secondary: #94a3b8;
@@ -18,7 +18,8 @@
   /* Golden Amber */
   --accent-secondary: #f59e0b;
   /* Deep Gold */
-  --accent-glow: rgba(251, 191, 36, 0.4);
+  --accent-glow: rgba(251, 191, 36, 0.5);
+  --accent-glow-strong: rgba(251, 191, 36, 0.8);
 
   --status-missing: #ef4444;
   /* Neon Red */
@@ -27,8 +28,8 @@
   --status-stolen: #f97316;
   /* Bright Orange */
 
-  --border-color: rgba(255, 255, 255, 0.1);
-  --glass-border: rgba(255, 255, 255, 0.08);
+  --border-color: rgba(255, 255, 255, 0.15);
+  --glass-border: rgba(255, 255, 255, 0.1);
 
   --font-main: 'Tajawal', sans-serif;
   /* More modern Arabic font */
@@ -37,7 +38,7 @@
   --radius-md: 16px;
   --radius-lg: 32px;
 
-  --shadow-glow: 0 0 20px rgba(251, 191, 36, 0.15);
+  --shadow-glow: 0 0 20px rgba(251, 191, 36, 0.2);
 }
 
 * {
@@ -50,8 +51,8 @@ body {
   font-family: var(--font-main);
   background-color: var(--bg-primary);
   background-image:
-    radial-gradient(circle at 10% 20%, rgba(251, 191, 36, 0.05) 0%, transparent 20%),
-    radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.05) 0%, transparent 20%);
+    radial-gradient(circle at 10% 20%, rgba(251, 191, 36, 0.08) 0%, transparent 25%),
+    radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 25%);
   color: var(--text-primary);
   min-height: 100vh;
   line-height: 1.6;
@@ -97,26 +98,30 @@ button {
   justify-content: space-between;
 }
 
-/* Legendary Glassmorphism */
+/* Legendary Glassmorphism - Extra Transparent */
 .glass {
   background: var(--bg-card);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--glass-border);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .glass:hover {
-  border-color: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+  background: rgba(15, 23, 42, 0.4);
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
 }
 
 /* Gradients */
 .text-gradient {
-  background: linear-gradient(135deg, #fff 0%, var(--text-secondary) 100%);
+  background: linear-gradient(135deg, #fff 20%, var(--accent-primary) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.3));
 }
 
 .accent-gradient {
@@ -125,7 +130,7 @@ button {
   -webkit-text-fill-color: transparent;
 }
 
-/* Premium Buttons */
+/* Premium Transparent Buttons */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -135,34 +140,42 @@ button {
   border-radius: var(--radius-md);
   font-weight: 700;
   letter-spacing: 0.5px;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+  z-index: 1;
 }
 
+/* Neon Glass Button */
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-  color: #000;
-  box-shadow: 0 4px 15px var(--accent-glow);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(251, 191, 36, 0.1);
+  /* Transparent Amber */
+  color: var(--accent-primary);
+  border: 1px solid var(--accent-primary);
+  box-shadow: 0 0 15px rgba(251, 191, 36, 0.2), inset 0 0 10px rgba(251, 191, 36, 0.1);
+  backdrop-filter: blur(4px);
 }
 
 .btn-primary:hover {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fff;
+  border-color: #fff;
+  box-shadow: 0 0 25px rgba(251, 191, 36, 0.5), inset 0 0 20px rgba(251, 191, 36, 0.2);
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px var(--accent-glow);
-  filter: brightness(1.1);
+  text-shadow: 0 0 8px rgba(251, 191, 36, 0.8);
 }
 
 .btn-outline {
   border: 1px solid var(--border-color);
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(4px);
 }
 
 .btn-outline:hover {
-  border-color: var(--accent-primary);
-  color: var(--accent-primary);
-  background: rgba(251, 191, 36, 0.05);
+  border-color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
 }
 
 /* Inputs */
