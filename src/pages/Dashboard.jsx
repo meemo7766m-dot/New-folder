@@ -230,10 +230,32 @@ const Dashboard = () => {
         }
     };
 
+    const handleGetLocation = () => {
+        if (!navigator.geolocation) {
+            alert("المتصفح لا يدعم تحديد الموقع.");
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setFormData({
+                    ...formData,
+                    last_seen_lat: position.coords.latitude,
+                    last_seen_lng: position.coords.longitude
+                });
+                alert("تم تحديد الإحداثيات بنجاح!");
+            },
+            () => {
+                alert("تعذر تحديد الموقع. يرجى السماح للمتصفح بالوصول للموقع.");
+            }
+        );
+    };
+
     const handleSubmitCar = async (e) => {
         e.preventDefault();
         setSubmitting(true);
         try {
+            // ... (rest of function)
+
             let image_url = null;
             if (imageFile) {
                 const fileName = `${Math.random()}.${imageFile.name.split('.').pop()}`;
@@ -463,9 +485,14 @@ const Dashboard = () => {
                             <input className="input-field" placeholder="رقم اللوحة" value={formData.plate_number} onChange={e => setFormData({ ...formData, plate_number: e.target.value })} required />
                             <input className="input-field" placeholder="اللون" value={formData.color} onChange={e => setFormData({ ...formData, color: e.target.value })} />
                             <input className="input-field" placeholder="الموقع" value={formData.last_seen_location} onChange={e => setFormData({ ...formData, last_seen_location: e.target.value })} />
-                            <div style={{ display: 'flex', gap: '1rem' }}>
-                                <input className="input-field" type="number" step="any" placeholder="Latitude (اختياري)" value={formData.last_seen_lat} onChange={e => setFormData({ ...formData, last_seen_lat: e.target.value })} />
-                                <input className="input-field" type="number" step="any" placeholder="Longitude (اختياري)" value={formData.last_seen_lng} onChange={e => setFormData({ ...formData, last_seen_lng: e.target.value })} />
+                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
+                                <div style={{ flex: 1, display: 'flex', gap: '1rem' }}>
+                                    <input className="input-field" type="number" step="any" placeholder="Latitude (اختياري)" value={formData.last_seen_lat} onChange={e => setFormData({ ...formData, last_seen_lat: e.target.value })} />
+                                    <input className="input-field" type="number" step="any" placeholder="Longitude (اختياري)" value={formData.last_seen_lng} onChange={e => setFormData({ ...formData, last_seen_lng: e.target.value })} />
+                                </div>
+                                <button type="button" onClick={handleGetLocation} className="btn btn-outline" style={{ whiteSpace: 'nowrap', height: '44px' }}>
+                                    <MapPin size={16} /> موقعي
+                                </button>
                             </div>
                             <textarea className="input-field" placeholder="تفاصيل..." value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={3} />
                             <input type="file" onChange={e => setImageFile(e.target.files[0])} style={{ color: '#fff' }} />

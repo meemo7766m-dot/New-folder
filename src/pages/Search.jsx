@@ -1,7 +1,7 @@
 import { Search as SearchIcon, Filter, MapPin, Calendar, Layers, List as ListIcon, Map as MapIcon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -290,6 +290,7 @@ const Search = () => {
                                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                                 />
+                                <LocationButton />
                                 <MarkerClusterGroup
                                     chunkedLoading
                                     iconCreateFunction={(cluster) => {
@@ -375,6 +376,37 @@ const Search = () => {
                 }
             `}</style>
         </div>
+    );
+};
+
+const LocationButton = () => {
+    const map = useMap();
+    const handleLocate = () => {
+        map.locate().on("locationfound", function (e) {
+            map.flyTo(e.latlng, 13);
+            L.marker(e.latlng).addTo(map).bindPopup("أنت هنا").openPopup();
+            L.circle(e.latlng, e.accuracy).addTo(map);
+        }).on("locationerror", function (e) {
+            alert("تعذر تحديد موقعك. تأكد من تفعيل GPS.");
+        });
+    };
+
+    return (
+        <button
+            onClick={handleLocate}
+            className="btn btn-primary"
+            style={{
+                position: 'absolute',
+                top: '20px',
+                right: '20px', // LTR, but in RTL content it might be weird. Let's stick to absolute.
+                zIndex: 1000,
+                padding: '0.5rem 1rem',
+                fontSize: '0.9rem',
+                boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
+            }}
+        >
+            <MapPin size={16} /> موقعي
+        </button>
     );
 };
 
