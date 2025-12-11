@@ -6,6 +6,7 @@ import CarDetails from './pages/CarDetails';
 import AdminLogin from './pages/AdminLogin';
 import AdminSignup from './pages/AdminSignup';
 import Dashboard from './pages/Dashboard';
+import Profile from './pages/Profile';
 import { useEffect } from 'react';
 import { supabase } from './lib/supabaseClient';
 
@@ -36,6 +37,7 @@ function App() {
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/signup" element={<AdminSignup />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/profile" element={<Profile />} />
         </Route>
       </Routes>
     </BrowserRouter>

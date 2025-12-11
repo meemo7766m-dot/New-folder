@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Car, Menu, X, Search, ShieldCheck, LogOut, LayoutDashboard } from 'lucide-react';
+import { Car, Menu, X, Search, ShieldCheck, LogOut, LayoutDashboard, User } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import '../styles/global.css';
 
@@ -45,6 +45,9 @@ const Navbar = () => {
 
                     {user ? (
                         <>
+                            <Link to="/profile" className="btn btn-outline" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <User size={16} /> الملف الشخصي
+                            </Link>
                             <Link to="/dashboard" className="btn btn-outline" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <LayoutDashboard size={16} /> لوحة التحكم
                             </Link>
@@ -83,6 +86,9 @@ const Navbar = () => {
 
                     {user ? (
                         <>
+                            <Link to="/profile" onClick={() => setIsMenuOpen(false)} style={{ color: 'var(--accent-primary)', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                <User size={18} /> الملف الشخصي
+                            </Link>
                             <Link to="/dashboard" onClick={() => setIsMenuOpen(false)} style={{ color: 'var(--accent-primary)', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                                 <LayoutDashboard size={18} /> لوحة التحكم
                             </Link>
