@@ -241,8 +241,7 @@ const Dashboard = () => {
                             new_status: statusMap[newStatus] || newStatus,
                             car_url: `${window.location.origin}/car/${id}`,
                             update_date: new Date().toLocaleDateString('ar-EG')
-                        },
-                        'OeZ_stx12V3DGfjDY'
+                        }
                     );
 
                     console.log('✅ Email sent successfully!');
