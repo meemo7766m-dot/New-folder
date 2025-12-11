@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User, Mail, Calendar, Lock, Save, Activity } from 'lucide-react';
+import NotificationSettings from '../components/NotificationSettings';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 
@@ -132,7 +133,10 @@ const Profile = () => {
                     </div>
                 </div>
 
-                {/* Change Password Card */}
+                {/* Notification Settings Card */}
+                <NotificationSettings userEmail={user?.email} />
+
+                                {/* Change Password Card */}
                 <div className="glass" style={{ padding: '2rem', borderRadius: 'var(--radius-md)' }}>
                     <h2 style={{ fontSize: '1.3rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <Lock size={24} color="var(--accent-primary)" />

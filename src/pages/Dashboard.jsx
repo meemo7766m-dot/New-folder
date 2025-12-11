@@ -228,9 +228,10 @@ const Dashboard = () => {
                     };
 
                     // Send email using EmailJS
+                    emailjs.init(import.meta.env.VITE_EMAILJS_PUBLIC_KEY);
                     await emailjs.send(
-                        'service_kbhlwl2',
-                        'template_6tcwsau',
+                        import.meta.env.VITE_EMAILJS_SERVICE_ID,
+                        import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
                         {
                             to_email: updatedCar.owner_email,
                             car_make: updatedCar.make,
@@ -238,7 +239,7 @@ const Dashboard = () => {
                             car_year: updatedCar.year || '-',
                             plate_number: updatedCar.plate_number,
                             new_status: statusMap[newStatus] || newStatus,
-                            car_url: `https://new-folder-khaki-two.vercel.app/car/${id}`,
+                            car_url: `${window.location.origin}/car/${id}`,
                             update_date: new Date().toLocaleDateString('ar-EG')
                         },
                         'OeZ_stx12V3DGfjDY'
