@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Trash2, MapPin, Loader, LogOut, Users, Shield, BarChart2, Map as MapIcon, List, FileText, Download, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
+import emailjs from '@emailjs/browser';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -220,27 +221,34 @@ const Dashboard = () => {
             // Send email notification if owner_email exists
             if (updatedCar?.owner_email) {
                 try {
-                    const { data, error: functionError } = await supabase.functions.invoke('send-status-email', {
-                        body: {
-                            carId: id,
-                            ownerEmail: updatedCar.owner_email,
-                            carDetails: {
-                                make: updatedCar.make,
-                                model: updatedCar.model,
-                                year: updatedCar.year,
-                                plateNumber: updatedCar.plate_number,
-                                newStatus: newStatus
-                            }
-                        }
-                    });
+                    const statusMap = {
+                        'missing': 'مفقود',
+                        'found': 'تم العثور عليه',
+                        'stolen': 'مسروق'
+                    };
 
-                    if (functionError) {
-                        console.error('Error sending email:', functionError);
-                    } else {
-                        console.log('Email sent successfully:', data);
-                    }
+                    // Send email using EmailJS
+                    await emailjs.send(
+                        'service_kbhlwl2',
+                        'template_6tcwsau',
+                        {
+                            to_email: updatedCar.owner_email,
+                            car_make: updatedCar.make,
+                            car_model: updatedCar.model,
+                            car_year: updatedCar.year || '-',
+                            plate_number: updatedCar.plate_number,
+                            new_status: statusMap[newStatus] || newStatus,
+                            car_url: `https://new-folder-khaki-two.vercel.app/car/${id}`,
+                            update_date: new Date().toLocaleDateString('ar-EG')
+                        },
+                        'OeZ_stx12V3DGfjDY'
+                    );
+
+                    console.log('✅ Email sent successfully!');
+                    alert('تم إرسال إشعار بالبريد الإلكتروني للمالك');
                 } catch (emailError) {
-                    console.error('Failed to send email notification:', emailError);
+                    console.error('❌ Failed to send email:', emailError);
+                    alert('حدث خطأ في إرسال البريد الإلكتروني');
                 }
             }
         }
