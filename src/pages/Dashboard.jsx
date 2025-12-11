@@ -19,7 +19,7 @@ const Dashboard = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [newUserEmail, setNewUserEmail] = useState('');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [formData, setFormData] = useState({ make: '', model: '', year: '', color: '', plate_number: '', last_seen_location: '', description: '', status: 'missing', last_seen_lat: '', last_seen_lng: '' });
+    const [formData, setFormData] = useState({ make: '', model: '', year: '', color: '', plate_number: '', last_seen_location: '', description: '', status: 'missing', last_seen_lat: '', last_seen_lng: '', owner_email: '' });
     const [imageFile, setImageFile] = useState(null);
     const [submitting, setSubmitting] = useState(false);
 
@@ -205,6 +205,7 @@ const Dashboard = () => {
     const updateStatus = async (id, newStatus) => {
         const { error } = await supabase.from('cars').update({ status: newStatus }).eq('id', id);
         if (!error) {
+            const updatedCar = cars.find(c => c.id === id);
             setCars(cars.map(c => c.id === id ? { ...c, status: newStatus } : c));
 
             // Log to timeline
@@ -215,6 +216,33 @@ const Dashboard = () => {
                 update_type: 'status_change',
                 update_date: new Date()
             }]);
+
+            // Send email notification if owner_email exists
+            if (updatedCar?.owner_email) {
+                try {
+                    const { data, error: functionError } = await supabase.functions.invoke('send-status-email', {
+                        body: {
+                            carId: id,
+                            ownerEmail: updatedCar.owner_email,
+                            carDetails: {
+                                make: updatedCar.make,
+                                model: updatedCar.model,
+                                year: updatedCar.year,
+                                plateNumber: updatedCar.plate_number,
+                                newStatus: newStatus
+                            }
+                        }
+                    });
+
+                    if (functionError) {
+                        console.error('Error sending email:', functionError);
+                    } else {
+                        console.log('Email sent successfully:', data);
+                    }
+                } catch (emailError) {
+                    console.error('Failed to send email notification:', emailError);
+                }
+            }
         }
     };
 
@@ -271,7 +299,7 @@ const Dashboard = () => {
             setIsAddModalOpen(false);
             fetchData();
             // Reset form
-            setFormData({ make: '', model: '', year: '', color: '', plate_number: '', last_seen_location: '', description: '', status: 'missing', last_seen_lat: '', last_seen_lng: '' });
+            setFormData({ make: '', model: '', year: '', color: '', plate_number: '', last_seen_location: '', description: '', status: 'missing', last_seen_lat: '', last_seen_lng: '', owner_email: '' });
             setImageFile(null);
 
         } catch (err) {
@@ -494,6 +522,13 @@ const Dashboard = () => {
                                     <MapPin size={16} /> موقعي
                                 </button>
                             </div>
+                            <input
+                                className="input-field"
+                                type="email"
+                                placeholder="البريد الإلكتروني للمالك (للإشعارات)"
+                                value={formData.owner_email}
+                                onChange={e => setFormData({ ...formData, owner_email: e.target.value })}
+                            />
                             <textarea className="input-field" placeholder="تفاصيل..." value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={3} />
                             <input type="file" onChange={e => setImageFile(e.target.files[0])} style={{ color: '#fff' }} />
 
