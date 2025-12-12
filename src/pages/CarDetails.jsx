@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import { Clock, MapPin, Calendar, FileText, Camera, Shield, MessageSquare, ChevronLeft, CreditCard } from 'lucide-react';
+import { Clock, MapPin, Calendar, FileText, Camera, Shield, MessageSquare, ChevronLeft, CreditCard, CheckCircle } from 'lucide-react';
 import SmartMatch from '../components/SmartMatch';
+import WitnessRating from '../components/WitnessRating';
+import WitnessCard from '../components/WitnessCard';
 import toast from 'react-hot-toast';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -26,7 +28,9 @@ const CarDetails = () => {
     const [car, setCar] = useState(null);
     const [updates, setUpdates] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('overview'); // overview, photos, map, timeline, contribute
+    const [activeTab, setActiveTab] = useState('overview');
+    const [submittedWitnessEmail, setSubmittedWitnessEmail] = useState(null);
+    const [submittedWitnessId, setSubmittedWitnessId] = useState(null);
 
     useEffect(() => {
         const fetchCarDetails = async () => {
@@ -85,11 +89,50 @@ const CarDetails = () => {
                         padding: '2rem'
                     }}>
                         <div className="container">
-                            <span style={{ background: statusColor, color: '#fff', padding: '0.4rem 1rem', borderRadius: '4px', fontWeight: 'bold' }}>{statusText}</span>
-                            <h1 style={{ fontSize: '2.5rem', marginTop: '0.5rem' }}>{car.year} {car.make} {car.model}</h1>
-                            <p style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ccc' }}>
-                                <MapPin size={18} /> {car.last_seen_location || 'الموقع غير معروف'}
-                            </p>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+                                <div>
+                                    <span style={{ background: statusColor, color: '#fff', padding: '0.4rem 1rem', borderRadius: '4px', fontWeight: 'bold' }}>{statusText}</span>
+                                    <h1 style={{ fontSize: '2.5rem', marginTop: '0.5rem' }}>{car.year} {car.make} {car.model}</h1>
+                                    <p style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ccc' }}>
+                                        <MapPin size={18} /> {car.last_seen_location || 'الموقع غير معروف'}
+                                    </p>
+                                </div>
+                                {!car.is_verified && car.owner_email && (
+                                    <button
+                                        onClick={() => navigate(`/verify/${car.id}`)}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '0.5rem',
+                                            padding: '0.8rem 1.5rem',
+                                            background: 'var(--accent-primary)',
+                                            color: '#000',
+                                            border: 'none',
+                                            borderRadius: '6px',
+                                            fontWeight: 'bold',
+                                            cursor: 'pointer',
+                                            fontSize: '0.95rem'
+                                        }}
+                                    >
+                                        <CheckCircle size={18} /> تحقق من الملكية
+                                    </button>
+                                )}
+                                {car.is_verified && (
+                                    <div style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        padding: '0.8rem 1.5rem',
+                                        background: 'var(--status-success)',
+                                        color: '#fff',
+                                        borderRadius: '6px',
+                                        fontWeight: 'bold',
+                                        fontSize: '0.95rem'
+                                    }}>
+                                        <CheckCircle size={18} /> تم التحقق
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -105,6 +148,7 @@ const CarDetails = () => {
                     { id: 'photos', label: 'الصور والمستندات', icon: Camera },
                     { id: 'map', label: 'خريطة الموقع', icon: MapPin },
                     { id: 'timeline', label: 'سجل التحديثات', icon: Clock },
+                    { id: 'ownership', label: 'التحقق من الملكية', icon: Shield },
                     { id: 'contribute', label: 'أرسل معلومة', icon: MessageSquare },
                 ].map(tab => (
                     <button
@@ -211,56 +255,148 @@ const CarDetails = () => {
                     </div>
                 )}
 
+                {activeTab === 'ownership' && (
+                    <div className="glass" style={{ padding: '2rem', borderRadius: 'var(--radius-md)', maxWidth: '700px', margin: '0 auto', textAlign: 'center' }}>
+                        {car.is_verified ? (
+                            <div>
+                                <CheckCircle size={48} color="var(--status-success)" style={{ marginBottom: '1rem' }} />
+                                <h2 style={{ marginBottom: '0.5rem', color: 'var(--status-success)' }}>تم التحقق من الملكية</h2>
+                                <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>تم التحقق بنجاح من ملكية هذه المركبة</p>
+                                <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>تاريخ التحقق: {car.verified_at ? new Date(car.verified_at).toLocaleDateString('ar-EG') : '-'}</p>
+                            </div>
+                        ) : (
+                            <div>
+                                <Shield size={48} color="var(--accent-primary)" style={{ marginBottom: '1rem' }} />
+                                <h2>تحقق من ملكية السيارة</h2>
+                                <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>تحقق من أنك المالك الحقيقي للمركبة عن طريق تقديم المستندات اللازمة</p>
+                                <button
+                                    onClick={() => navigate(`/verify/${car.id}`)}
+                                    style={{
+                                        padding: '0.8rem 2rem',
+                                        background: 'var(--accent-primary)',
+                                        color: '#000',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        fontWeight: 'bold',
+                                        cursor: 'pointer',
+                                        fontSize: '1rem'
+                                    }}
+                                >
+                                    ابدأ عملية التحقق
+                                </button>
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '1rem' }}>ستحتاج إلى تقديم صورة رخصة القيادة وشهادة ملكية السيارة</p>
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {activeTab === 'contribute' && (
                     <div className="glass" style={{ padding: '2rem', borderRadius: 'var(--radius-md)', maxWidth: '700px', margin: '0 auto' }}>
-                        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                            <Shield size={48} color="var(--status-success)" style={{ marginBottom: '1rem' }} />
-                            <h2>هل لديك معلومة؟</h2>
-                            <p style={{ color: 'var(--text-secondary)' }}>مساهمتك قد تساعد في استعادة هذه المركبة. هويتك ستبقى سرية تماماً.</p>
-                        </div>
-                        <form onSubmit={async (e) => {
-                            e.preventDefault();
-                            const form = e.target;
-                            const formData = new FormData(form);
-
-                            const report = {
-                                car_id: car.id,
-                                report_type: formData.get('report_type'),
-                                description: formData.get('description'),
-                                contact_info: formData.get('contact_info')
-                            };
-
-                            const toastId = toast.loading('جاري إرسال المعلومات...');
-
-                            try {
-                                const { error } = await supabase.from('case_reports').insert([report]);
-                                if (error) throw error;
-
-                                toast.success('تم إرسال المعلومات بسرية تامة. شكراً لمساهمتك!', { id: toastId });
-                                form.reset();
-                            } catch (err) {
-                                console.error(err);
-                                toast.error('حدث خطأ أثناء الإرسال. يرجى المحاولة لاحقاً.', { id: toastId });
-                            }
-                        }}>
-                            <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>نوع المعلومة</label>
-                                <select name="report_type" className="input-field" style={{ width: '100%' }} required>
-                                    <option value="sighting">شاهدت المركبة في مكان ما</option>
-                                    <option value="suspect">لدي معلومات عن الشخص المشتبه به</option>
-                                    <option value="other">أخرى</option>
-                                </select>
+                        {submittedWitnessEmail ? (
+                            <div>
+                                <WitnessCard email={submittedWitnessEmail} />
+                                <WitnessRating 
+                                    carId={car.id} 
+                                    witnessId={submittedWitnessId}
+                                    onRatingSubmitted={() => {
+                                        toast.success('شكراً لتقييمك!');
+                                    }}
+                                />
                             </div>
-                            <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>التفاصيل</label>
-                                <textarea name="description" className="input-field" rows="4" style={{ width: '100%' }} placeholder="اكتب كل ما تعرفه هنا..." required></textarea>
-                            </div>
-                            <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>رقم للتواصل (اختياري)</label>
-                                <input name="contact_info" type="text" className="input-field" style={{ width: '100%' }} placeholder="سيتم التواصل معك للضرورة فقط" />
-                            </div>
-                            <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>إرسال المعلومة بسرية</button>
-                        </form>
+                        ) : (
+                            <>
+                                <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                                    <Shield size={48} color="var(--status-success)" style={{ marginBottom: '1rem' }} />
+                                    <h2>هل لديك معلومة؟</h2>
+                                    <p style={{ color: 'var(--text-secondary)' }}>مساهمتك قد تساعد في استعادة هذه المركبة. هويتك ستبقى سرية تماماً.</p>
+                                </div>
+                                <form onSubmit={async (e) => {
+                                    e.preventDefault();
+                                    const form = e.target;
+                                    const formData = new FormData(form);
+
+                                    const contactEmail = formData.get('contact_email');
+                                    const witnessName = formData.get('witness_name');
+
+                                    const toastId = toast.loading('جاري إرسال المعلومات...');
+
+                                    try {
+                                        let witnessId = null;
+
+                                        if (contactEmail) {
+                                            const { data: existingWitness } = await supabase
+                                                .from('witnesses')
+                                                .select('id')
+                                                .eq('email', contactEmail)
+                                                .single();
+
+                                            if (existingWitness) {
+                                                witnessId = existingWitness.id;
+                                            } else {
+                                                const { data: newWitness, error: witnessError } = await supabase
+                                                    .from('witnesses')
+                                                    .insert({
+                                                        email: contactEmail,
+                                                        name: witnessName || 'مساهم مجهول',
+                                                        reputation_badge: 'bronze',
+                                                        is_verified: false
+                                                    })
+                                                    .select('id')
+                                                    .single();
+
+                                                if (witnessError) throw witnessError;
+                                                witnessId = newWitness?.id;
+                                            }
+                                        }
+
+                                        const report = {
+                                            car_id: car.id,
+                                            witness_id: witnessId,
+                                            contribution_type: formData.get('report_type'),
+                                            description: formData.get('description'),
+                                            status: 'pending'
+                                        };
+
+                                        const { error: reportError } = await supabase
+                                            .from('witness_contributions')
+                                            .insert([report]);
+
+                                        if (reportError) throw reportError;
+
+                                        toast.success('تم إرسال المعلومات بسرية تامة. شكراً لمساهمتك!', { id: toastId });
+                                        setSubmittedWitnessEmail(contactEmail);
+                                        setSubmittedWitnessId(witnessId);
+                                        form.reset();
+                                    } catch (err) {
+                                        console.error(err);
+                                        toast.error('حدث خطأ أثناء الإرسال: ' + err.message, { id: toastId });
+                                    }
+                                }}>
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>الاسم (اختياري)</label>
+                                        <input name="witness_name" type="text" className="input-field" style={{ width: '100%' }} placeholder="اسمك (يمكن أن تكون مجهول)" />
+                                    </div>
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>بريدك الإلكتروني (للتواصل والتقييمات)</label>
+                                        <input name="contact_email" type="email" className="input-field" style={{ width: '100%' }} placeholder="your@email.com" />
+                                    </div>
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>نوع المعلومة</label>
+                                        <select name="report_type" className="input-field" style={{ width: '100%' }} required>
+                                            <option value="sighting">شاهدت المركبة في مكان ما</option>
+                                            <option value="information">لدي معلومات إضافية</option>
+                                            <option value="location">معرفة الموقع الحالي</option>
+                                            <option value="tip">نصيحة</option>
+                                        </select>
+                                    </div>
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>التفاصيل</label>
+                                        <textarea name="description" className="input-field" rows="4" style={{ width: '100%' }} placeholder="اكتب كل ما تعرفه هنا..." required></textarea>
+                                    </div>
+                                    <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>إرسال المعلومة بسرية</button>
+                                </form>
+                            </>
+                        )}
                     </div>
                 )}
             </div>

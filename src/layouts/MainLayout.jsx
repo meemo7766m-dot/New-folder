@@ -3,6 +3,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { Toaster } from 'react-hot-toast';
 import AIAssistant from '../components/AIAssistant';
+import ChatBot from '../components/ChatBot';
 
 const MainLayout = () => {
     return (
@@ -20,6 +21,7 @@ const MainLayout = () => {
                 }
             }} />
             <AIAssistant />
+            <ChatBot />
         </div>
     );
 };

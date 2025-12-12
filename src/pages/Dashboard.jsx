@@ -360,8 +360,9 @@ const Dashboard = () => {
                     { id: 'overview', label: 'الإحصائيات', icon: BarChart2 },
                     { id: 'heatmap', label: 'الخريطة', icon: MapIcon },
                     { id: 'cases', label: 'البلاغات', icon: List },
+                    { id: 'verification', label: 'التحقق', icon: Shield },
                     { id: 'users', label: 'المشرفين', icon: Users },
-                    { id: 'reports', label: 'التقارير', icon: Shield },
+                    { id: 'reports', label: 'التقارير', icon: FileText },
                 ].map((tab, idx) => (
                     <motion.button
                         key={tab.id}
@@ -618,6 +619,118 @@ const Dashboard = () => {
                             <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
                                 لا توجد بلاغات مطابقة
                             </div>
+                        )}
+                    </div>
+                </motion.div>
+            )}
+
+            {/* Active Tab: Ownership Verification */}
+            {activeTab === 'verification' && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.5 }}
+                    className="glass"
+                    style={{ padding: '2rem', borderRadius: 'var(--radius-md)' }}
+                >
+                    <div className="flex-between" style={{ marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                        <div>
+                            <h3 style={{ marginBottom: '0.5rem' }}>التحقق من ملكية المركبات</h3>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>راجع والموافق على طلبات التحقق من الملكية</p>
+                        </div>
+                    </div>
+
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                        gap: '1.5rem'
+                    }}>
+                        {cars.filter(c => !c.is_verified && c.owner_email).length === 0 ? (
+                            <div style={{
+                                gridColumn: '1 / -1',
+                                padding: '2rem',
+                                textAlign: 'center',
+                                color: 'var(--text-secondary)',
+                                background: 'rgba(255,255,255,0.05)',
+                                borderRadius: 'var(--radius-md)'
+                            }}>
+                                <CheckCircle size={32} style={{ marginBottom: '1rem', color: 'var(--status-success)' }} />
+                                <p>جميع البلاغات تم التحقق منها ✓</p>
+                            </div>
+                        ) : (
+                            cars.filter(c => !c.is_verified && c.owner_email).map(car => (
+                                <motion.div
+                                    key={car.id}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="glass"
+                                    style={{
+                                        padding: '1.5rem',
+                                        borderRadius: 'var(--radius-md)',
+                                        borderLeft: '3px solid var(--accent-primary)'
+                                    }}
+                                >
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <h4 style={{ marginBottom: '0.5rem', fontSize: '1.1rem', fontWeight: 'bold' }}>
+                                            {car.year} {car.make} {car.model}
+                                        </h4>
+                                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                                            اللوحة: <strong>{car.plate_number}</strong>
+                                        </p>
+                                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                                            البريد: <strong>{car.owner_email}</strong>
+                                        </p>
+                                    </div>
+
+                                    <div style={{
+                                        display: 'flex',
+                                        gap: '0.75rem',
+                                        justifyContent: 'space-between'
+                                    }}>
+                                        <button
+                                            onClick={async () => {
+                                                const { error } = await supabase
+                                                    .from('cars')
+                                                    .update({ is_verified: true, verified_at: new Date().toISOString() })
+                                                    .eq('id', car.id);
+                                                if (!error) {
+                                                    alert('تم التحقق بنجاح');
+                                                    fetchData();
+                                                }
+                                            }}
+                                            style={{
+                                                flex: 1,
+                                                padding: '0.6rem',
+                                                background: 'var(--status-success)',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: 'var(--radius-sm)',
+                                                cursor: 'pointer',
+                                                fontSize: '0.9rem',
+                                                fontWeight: 500
+                                            }}
+                                        >
+                                            ✓ وافق
+                                        </button>
+                                        <button
+                                            onClick={() => window.open(`/verify/${car.id}`, '_blank')}
+                                            style={{
+                                                flex: 1,
+                                                padding: '0.6rem',
+                                                background: 'var(--accent-primary)',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: 'var(--radius-sm)',
+                                                cursor: 'pointer',
+                                                fontSize: '0.9rem',
+                                                fontWeight: 500
+                                            }}
+                                        >
+                                            🔍 معاينة
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            ))
                         )}
                     </div>
                 </motion.div>
