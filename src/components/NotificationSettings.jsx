@@ -23,7 +23,7 @@ const NotificationSettings = ({ userEmail }) => {
         try {
             localStorage.setItem('notificationPreferences', JSON.stringify(preferences));
             toast.success('تم حفظ إعدادات الإشعارات بنجاح');
-        } catch (error) {
+        } catch {
             toast.error('حدث خطأ في حفظ الإعدادات');
         } finally {
             setSaving(false);

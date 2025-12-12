@@ -1,4 +1,4 @@
-import { Search as SearchIcon, Filter, MapPin, Calendar, Layers, List as ListIcon, Map as MapIcon } from 'lucide-react';
+import { Search as SearchIcon, Filter, MapPin, Calendar, Layers, List as ListIcon, Map as MapIcon, X, Zap } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
@@ -6,6 +6,7 @@ import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion'; // eslint-disable-line no-unused-vars
 
 // Fix Leaflet Text Marker Issue
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -66,6 +67,7 @@ const Search = () => {
 
     useEffect(() => {
         fetchCars();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleFilterChange = (key, value) => {
@@ -89,39 +91,76 @@ const Search = () => {
     return (
         <div className="container" style={{ padding: '3rem 0', minHeight: '80vh' }}>
             {/* Header */}
-            <div className="flex-between" style={{ marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+            <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="flex-between"
+                style={{
+                    marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem',
+                    padding: '2rem', background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.05), rgba(16, 185, 129, 0.03))',
+                    borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)'
+                }}
+            >
                 <div>
-                    <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>البحث المتقدم</h1>
-                    <p style={{ color: 'var(--text-secondary)' }}>ابحث في قاعدة بيانات المركبات المفقودة باستخدام أدوات تصفية دقيقة.</p>
+                    <h1 style={{ fontSize: '2.2rem', marginBottom: '0.5rem', fontWeight: 'bold' }}>البحث المتقدم</h1>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>ابحث عن المركبات المفقودة باستخدام فلاتر دقيقة</p>
                 </div>
 
-                <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--bg-card)', padding: '0.3rem', borderRadius: 'var(--radius-sm)' }}>
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.2 }}
+                    style={{
+                        display: 'flex', gap: '0.5rem', background: 'var(--bg-card)', padding: '0.4rem', borderRadius: 'var(--radius-md)',
+                        border: '1px solid var(--border-color)'
+                    }}
+                >
                     <button
                         onClick={() => setViewMode('list')}
                         className={`btn ${viewMode === 'list' ? 'btn-primary' : ''}`}
-                        style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+                        style={{
+                            padding: '0.6rem 1.2rem', fontSize: '0.9rem',
+                            transition: 'all 0.3s ease'
+                        }}
                     >
-                        <ListIcon size={16} /> قائمة
+                        <ListIcon size={18} /> قائمة
                     </button>
                     <button
                         onClick={() => setViewMode('map')}
                         className={`btn ${viewMode === 'map' ? 'btn-primary' : ''}`}
-                        style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+                        style={{
+                            padding: '0.6rem 1.2rem', fontSize: '0.9rem',
+                            transition: 'all 0.3s ease'
+                        }}
                     >
-                        <MapIcon size={16} /> خريطة
+                        <MapIcon size={18} /> خريطة
                     </button>
-                </div>
-            </div>
+                </motion.div>
+            </motion.div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 1fr) 3fr', gap: '2rem', alignItems: 'start' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1fr) 3fr', gap: '2rem', alignItems: 'start' }}>
                 {/* Sidebar Filters */}
-                <div className="glass" style={{ padding: '1.5rem', borderRadius: 'var(--radius-md)', position: 'sticky', top: '2rem' }}>
+                <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="glass"
+                    style={{ padding: '1.5rem', borderRadius: 'var(--radius-md)', position: 'sticky', top: '2rem', border: '1px solid var(--border-color)' }}
+                >
                     <div className="flex-between" style={{ marginBottom: '1.5rem' }}>
-                        <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <Filter size={18} /> تصفية النتائج
+                        <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.1rem' }}>
+                            <Filter size={20} color="var(--accent-primary)" /> الفلاتر
                         </h3>
-                        <button onClick={clearFilters} style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', textDecoration: 'underline' }}>
-                            مسح الكل
+                        <button
+                            onClick={clearFilters}
+                            style={{
+                                fontSize: '0.8rem', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '0.3rem',
+                                background: 'transparent', border: 'none', cursor: 'pointer'
+                            }}
+                            title="مسح جميع الفلاتر"
+                        >
+                            <X size={14} /> مسح
                         </button>
                     </div>
 
@@ -221,24 +260,40 @@ const Search = () => {
                             تطبيق
                         </button>
                     </div>
-                </div>
+                </motion.div>
 
                 {/* Results Section */}
-                <div style={{ minHeight: '500px' }}>
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.4, duration: 0.5 }}
+                    style={{ minHeight: '500px' }}
+                >
 
                     {viewMode === 'list' ? (
                         /* LIST VIEW */
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
                             {loading ? (
-                                <p style={{ color: 'var(--text-secondary)' }}>جاري تحميل البيانات...</p>
+                                <div className="flex-center" style={{ gridColumn: '1 / -1', padding: '3rem' }}>
+                                    <div style={{ color: 'var(--text-secondary)', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⏳</div>
+                                        <p>جاري تحميل البيانات...</p>
+                                    </div>
+                                </div>
                             ) : cars.length > 0 ? (
-                                cars.map((car) => (
-                                    <div
+                                cars.map((car, idx) => (
+                                    <motion.div
                                         key={car.id}
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: idx * 0.05 }}
                                         className="glass"
-                                        style={{ borderRadius: 'var(--radius-md)', overflow: 'hidden', cursor: 'pointer', transition: 'transform 0.2s' }}
+                                        style={{
+                                            borderRadius: 'var(--radius-md)', overflow: 'hidden', cursor: 'pointer',
+                                            transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                                        }}
                                         onClick={() => navigate(`/car/${car.id}`)}
-                                        onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-4px)'}
+                                        onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-8px)'}
                                         onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
                                     >
                                         <div style={{ height: '200px', background: '#2a2d35', position: 'relative' }}>
@@ -272,14 +327,26 @@ const Search = () => {
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    </motion.div>
                                 ))
                             ) : (
-                                <div className="glass flex-center" style={{ gridColumn: '1 / -1', padding: '4rem', flexDirection: 'column', borderRadius: 'var(--radius-md)' }}>
-                                    <Layers size={48} style={{ opacity: 0.2, marginBottom: '1rem' }} />
-                                    <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>لا توجد مركبات تطابق شروط البحث.</p>
-                                    <button onClick={clearFilters} className="btn btn-outline" style={{ marginTop: '1rem' }}>عرض كل المركبات</button>
-                                </div>
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ duration: 0.5 }}
+                                    className="glass flex-center"
+                                    style={{
+                                        gridColumn: '1 / -1', padding: '4rem', flexDirection: 'column', borderRadius: 'var(--radius-md)',
+                                        border: '1px solid var(--border-color)'
+                                    }}
+                                >
+                                    <Layers size={56} style={{ opacity: 0.15, marginBottom: '1.5rem' }} />
+                                    <h3 style={{ marginBottom: '0.5rem', fontSize: '1.3rem' }}>لا توجد نتائج</h3>
+                                    <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', marginBottom: '2rem' }}>لم نجد مركبات تطابق شروط البحث</p>
+                                    <button onClick={clearFilters} className="btn btn-primary">
+                                        <Zap size={18} /> عرض كل المركبات
+                                    </button>
+                                </motion.div>
                             )}
                         </div>
                     ) : (
@@ -336,7 +403,7 @@ const Search = () => {
                             </MapContainer>
                         </div>
                     )}
-                </div>
+                </motion.div>
             </div>
 
             <style>{`
@@ -386,7 +453,7 @@ const LocationButton = () => {
             map.flyTo(e.latlng, 13);
             L.marker(e.latlng).addTo(map).bindPopup("أنت هنا").openPopup();
             L.circle(e.latlng, e.accuracy).addTo(map);
-        }).on("locationerror", function (e) {
+        }).on("locationerror", function () {
             alert("تعذر تحديد موقعك. تأكد من تفعيل GPS.");
         });
     };

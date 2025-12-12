@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Bot, User } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion'; // eslint-disable-line no-unused-vars
 import { useLocation, useNavigate } from 'react-router-dom';
 
 const AIAssistant = () => {
@@ -19,30 +19,33 @@ const AIAssistant = () => {
 
     useEffect(() => {
         scrollToBottom();
-    }, [messages]);
+    }, [messages.length]);
 
     // Context-aware greeting
     useEffect(() => {
         if (isOpen && messages.length === 1) {
             if (location.pathname === '/search') {
-                setMessages(prev => [...prev, { id: Date.now(), text: 'أرى أنك في صفحة البحث. يمكنك استخدام الفلاتر لتضييق النتائج حسب الماركة أو المكان.', sender: 'bot' }]);
+                setMessages(prev => [...prev, { id: generateId(), text: 'أرى أنك في صفحة البحث. يمكنك استخدام الفلاتر لتضييق النتائج حسب الماركة أو المكان.', sender: 'bot' }]);
             } else if (location.pathname === '/dashboard') {
-                setMessages(prev => [...prev, { id: Date.now(), text: 'أهلاً بك في لوحة التحكم. هل تحتاج مساعدة في إدارة البلاغات؟', sender: 'bot' }]);
+                setMessages(prev => [...prev, { id: generateId(), text: 'أهلاً بك في لوحة التحكم. هل تحتاج مساعدة في إدارة البلاغات؟', sender: 'bot' }]);
             }
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, location.pathname]);
+
+    const generateId = () => Math.random();
 
     const handleSend = () => {
         if (!input.trim()) return;
 
-        const userMsg = { id: Date.now(), text: input, sender: 'user' };
+        const userMsg = { id: generateId(), text: input, sender: 'user' };
         setMessages(prev => [...prev, userMsg]);
         setInput('');
 
         // Simulate AI thinking and response
         setTimeout(() => {
             const responseText = generateResponse(input);
-            setMessages(prev => [...prev, { id: Date.now() + 1, text: responseText, sender: 'bot' }]);
+            setMessages(prev => [...prev, { id: generateId(), text: responseText, sender: 'bot' }]);
         }, 800);
     };
 

@@ -1,31 +1,40 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, MapPin, Loader, LogOut, Users, Shield, BarChart2, Map as MapIcon, List, FileText, Download, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Trash2, MapPin, Loader, LogOut, Users, Shield, BarChart2, Map as MapIcon, List, FileText, Download, CheckCircle, XCircle, Edit2, Eye, TrendingUp, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import emailjs from '@emailjs/browser';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import ReportViewer from '../components/ReportViewer';
+import { motion } from 'framer-motion'; // eslint-disable-line no-unused-vars
 
 const Dashboard = () => {
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState('overview'); // overview, heatmap, cases, users
+    const [activeTab, setActiveTab] = useState('overview');
     const [cars, setCars] = useState([]);
     const [allowedUsers, setAllowedUsers] = useState([]);
-    const [visitCount, setVisitCount] = useState(0); // New state for visits
-    const [isLoading, setIsLoading] = useState(true);
+    const [visitCount, setVisitCount] = useState(0);
     const [newUserEmail, setNewUserEmail] = useState('');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterStatus, setFilterStatus] = useState('');
     const [formData, setFormData] = useState({ make: '', model: '', year: '', color: '', plate_number: '', last_seen_location: '', description: '', status: 'missing', last_seen_lat: '', last_seen_lng: '', owner_email: '' });
     const [imageFile, setImageFile] = useState(null);
     const [submitting, setSubmitting] = useState(false);
 
+    const filteredCars = cars.filter(car => {
+        const matchesSearch = car.make.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            car.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            car.plate_number.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesStatus = !filterStatus || car.status === filterStatus;
+        return matchesSearch && matchesStatus;
+    });
+
     const fetchData = async () => {
-        setIsLoading(true);
         const [carsRes, usersRes, visitsRes] = await Promise.all([
             supabase.from('cars').select('*').order('created_at', { ascending: false }),
             supabase.from('allowed_users').select('*').order('created_at', { ascending: false }),
@@ -35,7 +44,6 @@ const Dashboard = () => {
         if (carsRes.data) setCars(carsRes.data);
         if (usersRes.data) setAllowedUsers(usersRes.data);
         if (visitsRes.count !== null) setVisitCount(visitsRes.count);
-        setIsLoading(false);
     };
 
     // ... (keep existing code)
@@ -295,7 +303,7 @@ const Dashboard = () => {
             let image_url = null;
             if (imageFile) {
                 const fileName = `${Math.random()}.${imageFile.name.split('.').pop()}`;
-                const { data } = await supabase.storage.from('car-images').upload(fileName, imageFile);
+                await supabase.storage.from('car-images').upload(fileName, imageFile);
                 const { data: { publicUrl } } = supabase.storage.from('car-images').getPublicUrl(fileName);
                 image_url = publicUrl;
             }
@@ -320,54 +328,127 @@ const Dashboard = () => {
     return (
         <div className="container" style={{ padding: '2rem 0', minHeight: '100vh' }}>
             {/* Header */}
-            <div className="flex-between" style={{ marginBottom: '2rem', padding: '1rem', background: 'var(--bg-card)', borderRadius: 'var(--radius-md)' }}>
+            <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex-between"
+                style={{
+                    marginBottom: '2rem', padding: '2rem', background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(16, 185, 129, 0.05))',
+                    borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)'
+                }}
+            >
                 <div>
-                    <h1 style={{ fontSize: '1.5rem', marginBottom: '0.2rem' }}>لوحة التحكم</h1>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>أهلاً بك، {allowedUsers.length} مشرفين نشطين</p>
+                    <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem', fontWeight: 'bold' }}>لوحة التحكم</h1>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>مرحباً! لديك {allowedUsers.length} مشرفين نشطين</p>
                 </div>
-                <button onClick={handleLogout} className="btn" style={{ color: 'var(--status-error)' }}>
-                    <LogOut size={18} /> خروج
+                <button onClick={handleLogout} className="btn" style={{ color: 'var(--status-error)', padding: '0.8rem 1.5rem' }}>
+                    <LogOut size={20} /> تسجيل الخروج
                 </button>
-            </div>
+            </motion.div>
 
-            {/* Tabs */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
+            {/* Navigation Tabs */}
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                gap: '1rem',
+                marginBottom: '2rem',
+                '@media (max-width: 768px)': {
+                    gridTemplateColumns: 'repeat(2, 1fr)'
+                }
+            }}>
                 {[
                     { id: 'overview', label: 'الإحصائيات', icon: BarChart2 },
-                    { id: 'heatmap', label: 'الخريطة الحرارية', icon: MapIcon },
-                    { id: 'cases', label: 'إدارة البلاغات', icon: List },
+                    { id: 'heatmap', label: 'الخريطة', icon: MapIcon },
+                    { id: 'cases', label: 'البلاغات', icon: List },
                     { id: 'users', label: 'المشرفين', icon: Users },
-                    { id: 'reports', label: 'البلاغات السرية', icon: Shield },
-                ].map(tab => (
-                    <button
+                    { id: 'reports', label: 'التقارير', icon: Shield },
+                ].map((tab, idx) => (
+                    <motion.button
                         key={tab.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.05 }}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`glass flex-center ${activeTab === tab.id ? 'active-tab' : ''}`}
+                        className="glass"
                         style={{
-                            padding: '1.5rem', flexDirection: 'column', gap: '0.5rem',
+                            padding: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center', justifyContent: 'center',
                             borderRadius: 'var(--radius-md)',
-                            border: activeTab === tab.id ? '1px solid var(--accent-primary)' : '1px solid rgba(255,255,255,0.1)',
-                            background: activeTab === tab.id ? 'rgba(251, 191, 36, 0.1)' : 'rgba(255,255,255,0.03)',
+                            border: activeTab === tab.id ? '2px solid var(--accent-primary)' : '1px solid rgba(255,255,255,0.1)',
+                            background: activeTab === tab.id ? 'rgba(251, 191, 36, 0.15)' : 'rgba(255,255,255,0.03)',
                             color: activeTab === tab.id ? '#fff' : 'var(--text-secondary)',
-                            textShadow: activeTab === tab.id ? '0 0 10px rgba(251, 191, 36, 0.8)' : 'none',
-                            transition: 'all 0.3s ease'
+                            boxShadow: activeTab === tab.id ? '0 0 20px rgba(251, 191, 36, 0.2)' : 'none',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            cursor: 'pointer'
                         }}
                     >
-                        <tab.icon size={24} color={activeTab === tab.id ? 'var(--accent-primary)' : 'var(--text-secondary)'} />
-                        <span style={{ fontWeight: '800', fontSize: '1.1rem', letterSpacing: '0.5px' }}>{tab.label}</span>
-                    </button>
+                        <tab.icon size={22} color={activeTab === tab.id ? 'var(--accent-primary)' : 'var(--text-secondary)'} />
+                        <span style={{ fontWeight: '600', fontSize: '0.85rem' }}>{tab.label}</span>
+                    </motion.button>
                 ))}
             </div>
 
             {/* Content Active Tab: Overview */}
             {activeTab === 'overview' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-                    <div className="glass" style={{ padding: '2rem', borderRadius: 'var(--radius-md)' }}>
-                        <h3 style={{ marginBottom: '1.5rem' }}>توزيع الحالات</h3>
-                        <div style={{ height: '300px' }}>
-                            <ResponsiveContainer width="100%" height="100%">
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.5 }}
+                    style={{ display: 'grid', gap: '2rem' }}
+                >
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                        gap: '1.5rem'
+                    }}>
+                        {[
+                            { icon: FileText, label: 'إجمالي البلاغات', value: stats.total, color: '#fbbf24' },
+                            { icon: CheckCircle, label: 'تم العثور عليها', value: stats.found, color: '#10b981' },
+                            { icon: AlertCircle, label: 'مفقودات نشطة', value: stats.missing, color: '#ef4444' },
+                            { icon: TrendingUp, label: 'عدد الزيارات', value: visitCount, color: '#3b82f6' }
+                        ].map((stat, idx) => (
+                            <motion.div
+                                key={idx}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: idx * 0.1 }}
+                                className="glass"
+                                style={{
+                                    padding: '1.5rem', borderRadius: 'var(--radius-md)', borderTop: `3px solid ${stat.color}`,
+                                    display: 'flex', alignItems: 'center', gap: '1rem'
+                                }}
+                            >
+                                <stat.icon size={32} color={stat.color} style={{ opacity: 0.8 }} />
+                                <div>
+                                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '0.3rem' }}>{stat.label}</p>
+                                    <h3 style={{ fontSize: '1.8rem', fontWeight: 'bold', color: stat.color }}>{stat.value}</h3>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))', gap: '2rem' }}>
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.2 }}
+                            className="glass"
+                            style={{ padding: '2rem', borderRadius: 'var(--radius-md)' }}
+                        >
+                            <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <TrendingUp size={20} color="var(--accent-primary)" />
+                                توزيع الحالات
+                            </h3>
+                            <ResponsiveContainer width="100%" height={300}>
                                 <PieChart>
-                                    <Pie data={chartData} cx="50%" cy="50%" outerRadius={100} dataKey="value" label>
+                                    <Pie
+                                        data={chartData}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={70}
+                                        outerRadius={110}
+                                        paddingAngle={2}
+                                        dataKey="value"
+                                    >
                                         {chartData.map((entry, index) => (
                                             <Cell key={`cell-${index}`} fill={entry.fill} />
                                         ))}
@@ -376,19 +457,31 @@ const Dashboard = () => {
                                     <Legend />
                                 </PieChart>
                             </ResponsiveContainer>
-                        </div>
+                        </motion.div>
+
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.3 }}
+                            className="glass"
+                            style={{ padding: '2rem', borderRadius: 'var(--radius-md)' }}
+                        >
+                            <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <BarChart2 size={20} color="var(--accent-primary)" />
+                                الإحصائيات
+                            </h3>
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={chartData}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                                    <XAxis dataKey="name" stroke="var(--text-secondary)" />
+                                    <YAxis stroke="var(--text-secondary)" />
+                                    <Tooltip />
+                                    <Bar dataKey="value" fill="var(--accent-primary)" radius={[8, 8, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </motion.div>
                     </div>
-                    <div className="glass" style={{ padding: '2rem', borderRadius: 'var(--radius-md)' }}>
-                        <h3 style={{ marginBottom: '1.5rem' }}>ملخص سريع</h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                            <StatCard title="إجمالي البلاغات" value={stats.total} />
-                            <StatCard title="إجمالي الزوار" value={visitCount} color="#3b82f6" />
-                            <StatCard title="تم الحل" value={stats.found} color="var(--status-success)" />
-                            <StatCard title="مفقودات نشطة" value={stats.missing} color="var(--status-error)" />
-                            <StatCard title="تحت البحث" value={stats.stolen} color="var(--accent-secondary)" />
-                        </div>
-                    </div>
-                </div>
+                </motion.div>
             )}
 
             {/* Active Tab: Heatmap */}
@@ -418,21 +511,64 @@ const Dashboard = () => {
 
             {/* Active Tab: Cases Management */}
             {activeTab === 'cases' && (
-                <div className="glass" style={{ padding: '2rem', borderRadius: 'var(--radius-md)' }}>
-                    <div className="flex-between" style={{ marginBottom: '1.5rem' }}>
-                        <h3>سجل البلاغات ({cars.length})</h3>
-                        <div style={{ display: 'flex', gap: '1rem' }}>
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.5 }}
+                    className="glass"
+                    style={{ padding: '2rem', borderRadius: 'var(--radius-md)' }}
+                >
+                    <div className="flex-between" style={{ marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                        <div>
+                            <h3 style={{ marginBottom: '0.5rem' }}>سجل البلاغات ({filteredCars.length})</h3>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>إدارة وتحديث حالات المركبات المفقودة</p>
+                        </div>
+                        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                             <button onClick={() => setIsAddModalOpen(true)} className="btn btn-primary"><Plus size={16} /> إضافة جديد</button>
                             <button onClick={exportExcel} className="btn btn-outline"><Download size={16} /> Excel</button>
                             <button onClick={exportPDF} className="btn btn-outline"><Download size={16} /> PDF</button>
-                            <button onClick={printDailyReport} className="btn btn-primary" style={{ background: 'var(--accent-secondary)', borderColor: 'var(--accent-secondary)', color: 'white', textShadow: 'none' }}><FileText size={16} /> التقرير اليومي</button>
+                            <button onClick={printDailyReport} className="btn btn-primary" style={{ background: 'var(--accent-secondary)', borderColor: 'var(--accent-secondary)', color: 'white', textShadow: 'none' }}><FileText size={16} /> التقرير</button>
                         </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 200px', gap: '1rem', marginBottom: '1.5rem' }}>
+                        <input
+                            type="text"
+                            placeholder="ابحث حسب الماركة أو الموديل أو رقم اللوحة..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            style={{
+                                padding: '0.8rem 1rem',
+                                background: 'rgba(0,0,0,0.2)',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: 'var(--radius-sm)',
+                                color: 'white',
+                                fontFamily: 'inherit'
+                            }}
+                        />
+                        <select
+                            value={filterStatus}
+                            onChange={(e) => setFilterStatus(e.target.value)}
+                            style={{
+                                padding: '0.8rem 1rem',
+                                background: 'rgba(0,0,0,0.2)',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: 'var(--radius-sm)',
+                                color: 'white',
+                                fontFamily: 'inherit'
+                            }}
+                        >
+                            <option value="">جميع الحالات</option>
+                            <option value="missing">مفقود</option>
+                            <option value="found">تم العثور عليه</option>
+                            <option value="stolen">مسروق</option>
+                        </select>
                     </div>
 
                     <div style={{ overflowX: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
                             <thead>
-                                <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
+                                <tr style={{ borderBottom: '2px solid var(--border-color)', color: 'var(--text-secondary)' }}>
                                     <th style={{ padding: '1rem', textAlign: 'right' }}>المركبة</th>
                                     <th style={{ padding: '1rem', textAlign: 'right' }}>اللوحة</th>
                                     <th style={{ padding: '1rem', textAlign: 'right' }}>الحالة</th>
@@ -441,7 +577,7 @@ const Dashboard = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {cars.map(car => (
+                                {filteredCars.map(car => (
                                     <tr key={car.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                         <td style={{ padding: '1rem' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
@@ -478,28 +614,72 @@ const Dashboard = () => {
                                 ))}
                             </tbody>
                         </table>
+                        {filteredCars.length === 0 && (
+                            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                                لا توجد بلاغات مطابقة
+                            </div>
+                        )}
                     </div>
-                </div>
+                </motion.div>
             )}
 
             {/* Active Tab: Users */}
             {activeTab === 'users' && (
-                <div className="glass" style={{ padding: '2rem', borderRadius: 'var(--radius-md)' }}>
-                    <h3>إدارة المشرفين</h3>
-                    <form onSubmit={handleAddUser} style={{ display: 'flex', gap: '1rem', margin: '1.5rem 0', maxWidth: '500px' }}>
-                        <input className="input-field" value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} placeholder=" البريد الإلكتروني..." required style={{ flex: 1 }} />
-                        <button className="btn btn-primary">إضافة</button>
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.5 }}
+                    className="glass"
+                    style={{ padding: '2rem', borderRadius: 'var(--radius-md)' }}
+                >
+                    <div style={{ marginBottom: '2rem' }}>
+                        <h3 style={{ marginBottom: '0.5rem' }}>إدارة المشرفين</h3>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>أضف مشرفين جدد للمنصة</p>
+                    </div>
+
+                    <form onSubmit={handleAddUser} style={{ display: 'flex', gap: '1rem', margin: '1.5rem 0', maxWidth: '600px' }}>
+                        <input
+                            className="input-field"
+                            type="email"
+                            value={newUserEmail}
+                            onChange={e => setNewUserEmail(e.target.value)}
+                            placeholder="أدخل البريد الإلكتروني..."
+                            required
+                            style={{ flex: 1, padding: '0.8rem 1rem' }}
+                        />
+                        <button className="btn btn-primary"><Plus size={18} /> إضافة</button>
                     </form>
 
-                    <div style={{ display: 'grid', gap: '0.5rem', maxWidth: '600px' }}>
-                        {allowedUsers.map(u => (
-                            <div key={u.id} className="flex-between" style={{ padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-sm)' }}>
-                                <span>{u.email}</span>
-                                <span style={{ fontSize: '0.8rem', color: 'var(--status-success)' }}>مشرف نشط</span>
+                    <div style={{ display: 'grid', gap: '0.8rem', maxWidth: '700px' }}>
+                        {allowedUsers.length > 0 ? (
+                            allowedUsers.map((u, idx) => (
+                                <motion.div
+                                    key={u.id}
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: idx * 0.05 }}
+                                    className="glass"
+                                    style={{
+                                        padding: '1.2rem',
+                                        borderRadius: 'var(--radius-sm)',
+                                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                        borderLeft: '3px solid var(--accent-primary)'
+                                    }}
+                                >
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <Shield size={18} color="var(--accent-primary)" />
+                                        {u.email}
+                                    </span>
+                                    <span style={{ fontSize: '0.8rem', color: 'var(--status-success)', fontWeight: 'bold' }}>✓ مشرف نشط</span>
+                                </motion.div>
+                            ))
+                        ) : (
+                            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                                لا يوجد مشرفين حالياً
                             </div>
-                        ))}
+                        )}
                     </div>
-                </div>
+                </motion.div>
             )}
 
             {/* Active Tab: Reports */}
@@ -509,10 +689,34 @@ const Dashboard = () => {
 
             {/* Add Modal */}
             {isAddModalOpen && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div className="glass" style={{ width: '90%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem', borderRadius: 'var(--radius-lg)', background: 'var(--bg-card)' }}>
-                        <h2 style={{ marginBottom: '1.5rem' }}>إضافة بلاغ جديد</h2>
-                        <form onSubmit={handleSubmitCar} style={{ display: 'grid', gap: '1rem' }}>
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.2 }}
+                    style={{
+                        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        backdropFilter: 'blur(4px)'
+                    }}
+                    onClick={() => setIsAddModalOpen(false)}
+                >
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="glass"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                            width: '90%', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', padding: '2.5rem', borderRadius: 'var(--radius-lg)',
+                            background: 'linear-gradient(135deg, var(--bg-card), rgba(15, 23, 42, 0.5))',
+                            border: '1px solid var(--border-color)'
+                        }}
+                    >
+                        <div style={{ marginBottom: '2rem' }}>
+                            <h2 style={{ marginBottom: '0.5rem', fontSize: '1.8rem' }}>إضافة بلاغ جديد</h2>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>أدخل معلومات المركبة المفقودة بدقة</p>
+                        </div>
+
+                        <form onSubmit={handleSubmitCar} style={{ display: 'grid', gap: '1.2rem' }}>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 <input className="input-field" placeholder="الماركة" value={formData.make} onChange={e => setFormData({ ...formData, make: e.target.value })} required />
                                 <input className="input-field" placeholder="الموديل" value={formData.model} onChange={e => setFormData({ ...formData, model: e.target.value })} required />
@@ -540,13 +744,27 @@ const Dashboard = () => {
                             <textarea className="input-field" placeholder="تفاصيل..." value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={3} />
                             <input type="file" onChange={e => setImageFile(e.target.files[0])} style={{ color: '#fff' }} />
 
-                            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                                <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={submitting}>{submitting ? 'جاري الحفظ...' : 'حفظ'}</button>
-                                <button type="button" onClick={() => setIsAddModalOpen(false)} className="btn btn-outline">إلغاء</button>
+                            <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '1.5rem' }}>
+                                <button
+                                    type="submit"
+                                    className="btn btn-primary"
+                                    style={{ flex: 1, padding: '1rem' }}
+                                    disabled={submitting}
+                                >
+                                    {submitting ? 'جاري الحفظ...' : 'حفظ البلاغ'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAddModalOpen(false)}
+                                    className="btn btn-outline"
+                                    style={{ padding: '1rem' }}
+                                >
+                                    إلغاء
+                                </button>
                             </div>
                         </form>
-                    </div>
-                </div>
+                    </motion.div>
+                </motion.div>
             )}
 
             <style>{`

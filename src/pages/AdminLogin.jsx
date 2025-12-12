@@ -16,14 +16,14 @@ const AdminLogin = () => {
         setError(null);
 
         try {
-            const { data, error } = await supabase.auth.signInWithPassword({
+            const { error } = await supabase.auth.signInWithPassword({
                 email,
                 password,
             });
 
             if (error) throw error;
             navigate('/dashboard');
-        } catch (err) {
+        } catch {
             setError('فشل تسجيل الدخول. تأكد من البيانات.');
         } finally {
             setLoading(false);

@@ -32,7 +32,7 @@ const AdminSignup = () => {
             }
 
             // 2. Proceed with Signup
-            const { data, error } = await supabase.auth.signUp({
+            const { error } = await supabase.auth.signUp({
                 email,
                 password,
             });
