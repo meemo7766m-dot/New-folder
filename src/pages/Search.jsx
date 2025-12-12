@@ -1,0 +1,480 @@
+import { Search as SearchIcon, Filter, MapPin, Calendar, Layers, List as ListIcon, Map as MapIcon, X, Zap } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabaseClient';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion'; // eslint-disable-line no-unused-vars
+
+// Fix Leaflet Text Marker Issue
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+let DefaultIcon = L.icon({
+    iconUrl: icon,
+    shadowUrl: iconShadow,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41]
+});
+
+L.Marker.prototype.options.icon = DefaultIcon;
+
+const Search = () => {
+    const navigate = useNavigate();
+    const [viewMode, setViewMode] = useState('list'); // 'list' or 'map'
+    const [filters, setFilters] = useState({
+        query: '',
+        make: '',
+        model: '',
+        color: '',
+        status: '',
+        location: '',
+        dateFrom: '',
+        dateTo: ''
+    });
+    const [cars, setCars] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchCars = async () => {
+        setLoading(true);
+        try {
+            let query = supabase.from('cars').select('*');
+
+            if (filters.make) query = query.ilike('make', `%${filters.make}%`);
+            if (filters.model) query = query.ilike('model', `%${filters.model}%`);
+            if (filters.color) query = query.ilike('color', `%${filters.color}%`);
+            if (filters.status) query = query.eq('status', filters.status);
+            if (filters.location) query = query.ilike('last_seen_location', `%${filters.location}%`);
+
+            if (filters.dateFrom) query = query.gte('last_seen_date', filters.dateFrom);
+            if (filters.dateTo) query = query.lte('last_seen_date', filters.dateTo);
+
+            if (filters.query) {
+                query = query.or(`model.ilike.%${filters.query}%,plate_number.ilike.%${filters.query}%,vin.ilike.%${filters.query}%`);
+            }
+
+            const { data, error } = await query;
+            if (error) throw error;
+            setCars(data || []);
+        } catch (error) {
+            console.error('Error fetching cars:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchCars();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const handleFilterChange = (key, value) => {
+        setFilters(prev => ({ ...prev, [key]: value }));
+    };
+
+    const clearFilters = () => {
+        setFilters({
+            query: '',
+            make: '',
+            model: '',
+            color: '',
+            status: '',
+            location: '',
+            dateFrom: '',
+            dateTo: ''
+        });
+        setTimeout(fetchCars, 0); // Trigger fetch after state update
+    };
+
+    return (
+        <div className="container" style={{ padding: '3rem 0', minHeight: '80vh' }}>
+            {/* Header */}
+            <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="flex-between"
+                style={{
+                    marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem',
+                    padding: '2rem', background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.05), rgba(16, 185, 129, 0.03))',
+                    borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)'
+                }}
+            >
+                <div>
+                    <h1 style={{ fontSize: '2.2rem', marginBottom: '0.5rem', fontWeight: 'bold' }}>البحث المتقدم</h1>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>ابحث عن المركبات المفقودة باستخدام فلاتر دقيقة</p>
+                </div>
+
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.2 }}
+                    style={{
+                        display: 'flex', gap: '0.5rem', background: 'var(--bg-card)', padding: '0.4rem', borderRadius: 'var(--radius-md)',
+                        border: '1px solid var(--border-color)'
+                    }}
+                >
+                    <button
+                        onClick={() => setViewMode('list')}
+                        className={`btn ${viewMode === 'list' ? 'btn-primary' : ''}`}
+                        style={{
+                            padding: '0.6rem 1.2rem', fontSize: '0.9rem',
+                            transition: 'all 0.3s ease'
+                        }}
+                    >
+                        <ListIcon size={18} /> قائمة
+                    </button>
+                    <button
+                        onClick={() => setViewMode('map')}
+                        className={`btn ${viewMode === 'map' ? 'btn-primary' : ''}`}
+                        style={{
+                            padding: '0.6rem 1.2rem', fontSize: '0.9rem',
+                            transition: 'all 0.3s ease'
+                        }}
+                    >
+                        <MapIcon size={18} /> خريطة
+                    </button>
+                </motion.div>
+            </motion.div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1fr) 3fr', gap: '2rem', alignItems: 'start' }}>
+                {/* Sidebar Filters */}
+                <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="glass"
+                    style={{ padding: '1.5rem', borderRadius: 'var(--radius-md)', position: 'sticky', top: '2rem', border: '1px solid var(--border-color)' }}
+                >
+                    <div className="flex-between" style={{ marginBottom: '1.5rem' }}>
+                        <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.1rem' }}>
+                            <Filter size={20} color="var(--accent-primary)" /> الفلاتر
+                        </h3>
+                        <button
+                            onClick={clearFilters}
+                            style={{
+                                fontSize: '0.8rem', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '0.3rem',
+                                background: 'transparent', border: 'none', cursor: 'pointer'
+                            }}
+                            title="مسح جميع الفلاتر"
+                        >
+                            <X size={14} /> مسح
+                        </button>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                        {/* Search Query */}
+                        <div className="form-group">
+                            <label>بحث عام</label>
+                            <div className="input-wrapper">
+                                <input
+                                    type="text"
+                                    value={filters.query}
+                                    onChange={(e) => handleFilterChange('query', e.target.value)}
+                                    placeholder="رقم اللوحة، الهيكل..."
+                                />
+                                <SearchIcon size={16} className="icon" />
+                            </div>
+                        </div>
+
+                        {/* Make */}
+                        <div className="form-group">
+                            <label>الماركة</label>
+                            <select value={filters.make} onChange={(e) => handleFilterChange('make', e.target.value)}>
+                                <option value="">الكل</option>
+                                <option value="Toyota">Toyota</option>
+                                <option value="Hyundai">Hyundai</option>
+                                <option value="Kia">Kia</option>
+                                <option value="Nissan">Nissan</option>
+                                <option value="Honda">Honda</option>
+                                <option value="Mitsubishi">Mitsubishi</option>
+                            </select>
+                        </div>
+
+                        {/* Model */}
+                        <div className="form-group">
+                            <label>الموديل</label>
+                            <input
+                                type="text"
+                                value={filters.model}
+                                onChange={(e) => handleFilterChange('model', e.target.value)}
+                                placeholder="مثال: كورولا"
+                            />
+                        </div>
+
+                        {/* Status */}
+                        <div className="form-group">
+                            <label>الحالة</label>
+                            <select value={filters.status} onChange={(e) => handleFilterChange('status', e.target.value)}>
+                                <option value="">الكل</option>
+                                <option value="missing">مفقود</option>
+                                <option value="stolen">مسروق</option>
+                                <option value="found">تم العثور عليه</option>
+                            </select>
+                        </div>
+
+                        {/* Color */}
+                        <div className="form-group">
+                            <label>اللون</label>
+                            <input
+                                type="text"
+                                value={filters.color}
+                                onChange={(e) => handleFilterChange('color', e.target.value)}
+                                placeholder="مثال: أبيض"
+                            />
+                        </div>
+
+                        {/* Location */}
+                        <div className="form-group">
+                            <label>المنطقة / الولاية</label>
+                            <select value={filters.location} onChange={(e) => handleFilterChange('location', e.target.value)}>
+                                <option value="">الكل</option>
+                                <option value="Khartoum">الخرطوم</option>
+                                <option value="Omdurman">أم درمان</option>
+                                <option value="Bahri">بحري</option>
+                                <option value="Gezira">الجزيرة</option>
+                                <option value="Red Sea">البحر الأحمر</option>
+                            </select>
+                        </div>
+
+                        {/* Date Range */}
+                        <div className="form-group">
+                            <label>تاريخ الاختفاء (من - إلى)</label>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <input
+                                    type="date"
+                                    value={filters.dateFrom}
+                                    onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
+                                />
+                                <input
+                                    type="date"
+                                    value={filters.dateTo}
+                                    onChange={(e) => handleFilterChange('dateTo', e.target.value)}
+                                />
+                            </div>
+                        </div>
+
+                        <button onClick={fetchCars} className="btn btn-primary" style={{ marginTop: '0.5rem', justifyContent: 'center' }}>
+                            تطبيق
+                        </button>
+                    </div>
+                </motion.div>
+
+                {/* Results Section */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.4, duration: 0.5 }}
+                    style={{ minHeight: '500px' }}
+                >
+
+                    {viewMode === 'list' ? (
+                        /* LIST VIEW */
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                            {loading ? (
+                                <div className="flex-center" style={{ gridColumn: '1 / -1', padding: '3rem' }}>
+                                    <div style={{ color: 'var(--text-secondary)', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⏳</div>
+                                        <p>جاري تحميل البيانات...</p>
+                                    </div>
+                                </div>
+                            ) : cars.length > 0 ? (
+                                cars.map((car, idx) => (
+                                    <motion.div
+                                        key={car.id}
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: idx * 0.05 }}
+                                        className="glass"
+                                        style={{
+                                            borderRadius: 'var(--radius-md)', overflow: 'hidden', cursor: 'pointer',
+                                            transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                                        }}
+                                        onClick={() => navigate(`/car/${car.id}`)}
+                                        onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-8px)'}
+                                        onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                                    >
+                                        <div style={{ height: '200px', background: '#2a2d35', position: 'relative' }}>
+                                            {car.image_url ? (
+                                                <img src={car.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            ) : (
+                                                <div className="flex-center" style={{ height: '100%', color: 'var(--text-muted)' }}>لا توجد صورة</div>
+                                            )}
+                                            <span
+                                                style={{
+                                                    position: 'absolute', top: '10px', right: '10px',
+                                                    padding: '4px 10px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold',
+                                                    background: car.status === 'found' ? 'var(--status-success)' : car.status === 'missing' ? 'var(--status-error)' : 'var(--accent-secondary)',
+                                                    color: '#fff'
+                                                }}
+                                            >
+                                                {car.status === 'missing' ? 'مفقود' : car.status === 'found' ? 'تم العثور عليه' : 'مسروق'}
+                                            </span>
+                                        </div>
+                                        <div style={{ padding: '1.25rem' }}>
+                                            <h3 style={{ marginBottom: '0.5rem', fontSize: '1.1rem' }}>{car.year} {car.make} {car.model}</h3>
+
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                                                <div className="flex-center" style={{ justifyContent: 'flex-start', gap: '0.5rem' }}>
+                                                    <MapPin size={14} color="var(--accent-primary)" />
+                                                    <span>{car.last_seen_location || 'الموقع غير محدد'}</span>
+                                                </div>
+                                                <div className="flex-center" style={{ justifyContent: 'flex-start', gap: '0.5rem' }}>
+                                                    <Calendar size={14} color="var(--accent-primary)" />
+                                                    <span>{car.last_seen_date || 'التاريخ غير محدد'}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))
+                            ) : (
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ duration: 0.5 }}
+                                    className="glass flex-center"
+                                    style={{
+                                        gridColumn: '1 / -1', padding: '4rem', flexDirection: 'column', borderRadius: 'var(--radius-md)',
+                                        border: '1px solid var(--border-color)'
+                                    }}
+                                >
+                                    <Layers size={56} style={{ opacity: 0.15, marginBottom: '1.5rem' }} />
+                                    <h3 style={{ marginBottom: '0.5rem', fontSize: '1.3rem' }}>لا توجد نتائج</h3>
+                                    <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', marginBottom: '2rem' }}>لم نجد مركبات تطابق شروط البحث</p>
+                                    <button onClick={clearFilters} className="btn btn-primary">
+                                        <Zap size={18} /> عرض كل المركبات
+                                    </button>
+                                </motion.div>
+                            )}
+                        </div>
+                    ) : (
+                        /* MAP VIEW */
+                        <div className="glass" style={{ height: '600px', borderRadius: 'var(--radius-md)', overflow: 'hidden', position: 'relative' }}>
+                            <MapContainer center={[15.5007, 32.5599]} zoom={6} style={{ height: '100%', width: '100%' }}>
+                                <TileLayer
+                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                />
+                                <LocationButton />
+                                <MarkerClusterGroup
+                                    chunkedLoading
+                                    iconCreateFunction={(cluster) => {
+                                        return L.divIcon({
+                                            html: `<div style="background:var(--accent-primary);color:#000;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-weight:bold;border:2px solid #fff;">${cluster.getChildCount()}</div>`,
+                                            className: 'custom-cluster-icon',
+                                            iconSize: L.point(30, 30, true),
+                                        });
+                                    }}
+                                >
+                                    {cars.map(car => (
+                                        (car.last_seen_lat || car.last_seen_location === 'Khartoum') && (
+                                            <Marker
+                                                key={car.id}
+                                                position={[
+                                                    car.last_seen_lat || 15.5007 + (Math.random() * 0.5),
+                                                    car.last_seen_lng || 32.5599 + (Math.random() * 0.5)
+                                                ]}
+                                                icon={L.divIcon({
+                                                    className: 'custom-icon',
+                                                    html: `<div style="
+                                                        background-color: ${car.status === 'missing' ? '#ef4444' : car.status === 'found' ? '#10b981' : '#f97316'};
+                                                        width: 16px; height: 16px; border-radius: 50%;
+                                                        border: 2px solid white; box-shadow: 0 0 10px ${car.status === 'missing' ? '#ef4444' : '#10b981'};
+                                                    "></div>`,
+                                                    iconSize: [20, 20],
+                                                    iconAnchor: [10, 10]
+                                                })}
+                                            >
+                                                <Popup>
+                                                    <div style={{ textAlign: 'right', direction: 'rtl' }}>
+                                                        <strong>{car.make} {car.model}</strong><br />
+                                                        <span style={{ fontSize: '0.8rem', color: '#666' }}>{car.plate_number}</span><br />
+                                                        <button onClick={() => navigate(`/car/${car.id}`)} style={{ marginTop: '0.5rem', color: 'blue', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
+                                                            التفاصيل &larr;
+                                                        </button>
+                                                    </div>
+                                                </Popup>
+                                            </Marker>
+                                        )
+                                    ))}
+                                </MarkerClusterGroup>
+                            </MapContainer>
+                        </div>
+                    )}
+                </motion.div>
+            </div>
+
+            <style>{`
+                .form-group label {
+                    display: block;
+                    margin-bottom: 0.5rem;
+                    font-size: 0.9rem;
+                    color: var(--text-secondary);
+                }
+                .form-group input, .form-group select {
+                    width: 100%;
+                    padding: 0.7rem;
+                    border-radius: var(--radius-sm);
+                    border: 1px solid var(--border-color);
+                    background: var(--bg-primary);
+                    color: var(--text-primary);
+                    font-family: inherit;
+                }
+                .form-group input:focus, .form-group select:focus {
+                    border-color: var(--accent-primary);
+                    outline: none;
+                }
+                .input-wrapper {
+                    position: relative;
+                }
+                .input-wrapper input {
+                    padding-right: 0.8rem;
+                    padding-left: 2.2rem; /* RTL adjust: icon is on LTR right visually, but DOM flow left */
+                    /* Actually in RTL, right is start. Let's fix icon pos */
+                }
+                .input-wrapper .icon {
+                    position: absolute;
+                    left: 0.8rem;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    color: var(--text-muted);
+                }
+            `}</style>
+        </div>
+    );
+};
+
+const LocationButton = () => {
+    const map = useMap();
+    const handleLocate = () => {
+        map.locate().on("locationfound", function (e) {
+            map.flyTo(e.latlng, 13);
+            L.marker(e.latlng).addTo(map).bindPopup("أنت هنا").openPopup();
+            L.circle(e.latlng, e.accuracy).addTo(map);
+        }).on("locationerror", function () {
+            alert("تعذر تحديد موقعك. تأكد من تفعيل GPS.");
+        });
+    };
+
+    return (
+        <button
+            onClick={handleLocate}
+            className="btn btn-primary"
+            style={{
+                position: 'absolute',
+                top: '20px',
+                right: '20px', // LTR, but in RTL content it might be weird. Let's stick to absolute.
+                zIndex: 1000,
+                padding: '0.5rem 1rem',
+                fontSize: '0.9rem',
+                boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
+            }}
+        >
+            <MapPin size={16} /> موقعي
+        </button>
+    );
+};
+
+export default Search;
