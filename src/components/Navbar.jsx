@@ -42,6 +42,11 @@ const Navbar = () => {
                 <div className="hide-mobile" style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
                     <Link to="/" className="nav-link">الرئيسية</Link>
                     <Link to="/search" className="nav-link">بحث عن مركبة</Link>
+                    <Link to="/media-upload" className="nav-link">رفع الصور</Link>
+                    <Link to="/image-search" className="nav-link">البحث بالصورة</Link>
+                    <Link to="/rate-service" className="nav-link">قيم الخدمة</Link>
+                    <Link to="/complaints" className="nav-link">شكاوى واقتراحات</Link>
+                    <Link to="/witness" className="nav-link">توثيق الشاهد</Link>
 
                     {user ? (
                         <>
@@ -83,6 +88,11 @@ const Navbar = () => {
                 }}>
                     <Link to="/" onClick={() => setIsMenuOpen(false)}>الرئيسية</Link>
                     <Link to="/search" onClick={() => setIsMenuOpen(false)}>بحث عن مركبة</Link>
+                    <Link to="/media-upload" onClick={() => setIsMenuOpen(false)}>رفع الصور</Link>
+                    <Link to="/image-search" onClick={() => setIsMenuOpen(false)}>البحث بالصورة</Link>
+                    <Link to="/rate-service" onClick={() => setIsMenuOpen(false)}>قيم الخدمة</Link>
+                    <Link to="/complaints" onClick={() => setIsMenuOpen(false)}>شكاوى واقتراحات</Link>
+                    <Link to="/witness" onClick={() => setIsMenuOpen(false)}>توثيق الشاهد</Link>
 
                     {user ? (
                         <>

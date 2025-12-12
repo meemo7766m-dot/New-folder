@@ -13,6 +13,15 @@ import Investigators from './pages/Investigators';
 import VisualSearch from './pages/VisualSearch';
 import FaceVerification from './components/FaceVerification';
 import VoiceSearch from './components/VoiceSearch';
+import MediaUploadPage from './pages/MediaUploadPage';
+import ImageSearchPage from './pages/ImageSearchPage';
+import RateServicePage from './pages/RateServicePage';
+import ComplaintsPage from './pages/ComplaintsPage';
+import WitnessPage from './pages/WitnessPage';
+import VerificationAdmin from './pages/VerificationAdmin';
+import SmartSearchPage from './pages/SmartSearchPage';
+import MapPage from './pages/MapPage';
+import AdvancedSearchPage from './pages/AdvancedSearchPage';
 import { useEffect } from 'react';
 import { supabase } from './lib/supabaseClient';
 
@@ -44,6 +53,15 @@ function App() {
           <Route path="/alerts" element={<AlertPreferences />} />
           <Route path="/investigators" element={<Investigators />} />
           <Route path="/visual-search" element={<VisualSearch />} />
+          <Route path="/media-upload" element={<MediaUploadPage />} />
+          <Route path="/image-search" element={<ImageSearchPage />} />
+          <Route path="/rate-service" element={<RateServicePage />} />
+          <Route path="/complaints" element={<ComplaintsPage />} />
+          <Route path="/witness" element={<WitnessPage />} />
+          <Route path="/smart-search" element={<SmartSearchPage />} />
+          <Route path="/map" element={<MapPage />} />
+          <Route path="/advanced-search" element={<AdvancedSearchPage />} />
+          <Route path="/verification-admin" element={<VerificationAdmin />} />
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/signup" element={<AdminSignup />} />
           <Route path="/dashboard" element={<Dashboard />} />

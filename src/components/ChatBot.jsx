@@ -1,15 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { MessageCircle, X, Send, Loader } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion'; // eslint-disable-line no-unused-vars
+import { MessageCircle, X, Send, Loader, Image as ImageIcon, Video } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import {
     recognizeIntent,
     generateResponse,
+    generateSmartResponse,
     saveChatMessage,
     createConversation,
     updateConversation,
-    searchCars
+    searchCars,
+    extractSearchTerms
 } from '../utils/chatbotService';
 
 const ChatBot = () => {
@@ -19,6 +21,7 @@ const ChatBot = () => {
     const [loading, setLoading] = useState(false);
     const [conversation, setConversation] = useState(null);
     const messagesEndRef = useRef(null);
+    const fileInputRef = useRef(null);
 
     useEffect(() => {
         initializeChat();
@@ -55,6 +58,64 @@ const ChatBot = () => {
         await handleSendMessage(suggestion.text, suggestion.action);
     };
 
+    const handleMediaUpload = async (e) => {
+        const files = Array.from(e.target.files);
+        if (!files.length || !conversation) return;
+
+        setLoading(true);
+        for (const file of files) {
+            try {
+                const mediaType = file.type.startsWith('image/') ? 'image' : 'video';
+                const timestamp = Date.now();
+                const ext = file.name.split('.').pop();
+                const fileName = `${mediaType}-${timestamp}-${Math.random().toString(36).substr(2, 9)}.${ext}`;
+                const filePath = `${mediaType}/${fileName}`;
+
+                const { error: uploadError } = await supabase.storage
+                    .from('media')
+                    .upload(filePath, file);
+
+                if (uploadError) {
+                    toast.error(`خطأ في تحميل ${file.name}`);
+                    continue;
+                }
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('media')
+                    .getPublicUrl(filePath);
+
+                const userMessage = {
+                    id: Date.now() + Math.random(),
+                    type: 'user',
+                    text: `📎 ${file.name}`,
+                    media: { type: mediaType, url: publicUrl }
+                };
+
+                setMessages(prev => [...prev, userMessage]);
+                await saveChatMessage(conversation.id, 'user', `[${mediaType.toUpperCase()}] ${file.name}`);
+
+                const botResponse = generateResponse('media_upload');
+                const botMessage = {
+                    id: Date.now() + 1 + Math.random(),
+                    type: 'bot',
+                    text: botResponse.text,
+                    suggestions: botResponse.suggestions
+                };
+
+                setMessages(prev => [...prev, botMessage]);
+                await saveChatMessage(conversation.id, 'bot', botResponse.text);
+                await updateConversation(conversation.id);
+
+                toast.success(`تم تحميل ${file.name} بنجاح ✓`);
+            } catch (err) {
+                console.error(err);
+                toast.error('خطأ غير متوقع');
+            }
+        }
+        setLoading(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
     const handleSendMessage = async (messageText = null, action = null) => {
         const message = messageText || inputValue.trim();
         if (!message || loading || !conversation) return;
@@ -74,45 +135,44 @@ const ChatBot = () => {
             await saveChatMessage(conversation.id, 'user', message);
 
             const intent = recognizeIntent(message);
-            let botResponse = generateResponse(intent);
-
-            if (action === 'search') {
-                const searchResults = await searchCars(message);
-                if (searchResults.length > 0) {
+            
+            let botResponse;
+            
+            if (intent === 'search_car' || action === 'search') {
+                botResponse = await generateSmartResponse(message, intent);
+                if (botResponse.hasResults) {
+                    botResponse.suggestions = [
+                        { text: 'ابحث عن سيارة أخرى', action: 'search' },
+                        { text: 'اعرض التفاصيل كاملة', action: 'view_details' }
+                    ];
+                }
+            } else {
+                botResponse = generateResponse(intent);
+                
+                if (action === 'report') {
                     botResponse = {
                         ...botResponse,
-                        text: `وجدت ${searchResults.length} سيارات مطابقة:`,
-                        searchResults
+                        text: 'يمكنك الإبلاغ عن سيارة مفقودة من خلال الضغط على زر "إضافة سيارة" في الصفحة الرئيسية',
+                        suggestions: [
+                            { text: 'اذهب للصفحة الرئيسية', action: 'home' },
+                            { text: 'هل تحتاج مساعدة أخرى؟', action: 'help' }
+                        ]
                     };
-                } else {
+                } else if (action === 'investigator') {
                     botResponse = {
                         ...botResponse,
-                        text: 'لم أتمكن من العثور على نتائج. هل تود محاولة بحث آخر؟'
+                        text: 'يمكنك عرض قائمة المحققين المتخصصين والحجز معهم مباشرة',
+                        suggestions: [
+                            { text: 'عرض المحققين', action: 'investigators' },
+                            { text: 'معلومات عن الخدمة', action: 'help' }
+                        ]
+                    };
+                } else if (action === 'faq_search') {
+                    botResponse = {
+                        ...botResponse,
+                        text: 'للبحث عن سيارة: استخدم شريط البحث العلوي، أدخل اسم الماركة أو الموديل أو رقم اللوحة، وسيظهر لك جميع السيارات المطابقة.'
                     };
                 }
-            } else if (action === 'report') {
-                botResponse = {
-                    ...botResponse,
-                    text: 'يمكنك الإبلاغ عن سيارة مفقودة من خلال الضغط على زر "إضافة سيارة" في الصفحة الرئيسية',
-                    suggestions: [
-                        { text: 'اذهب للصفحة الرئيسية', action: 'home' },
-                        { text: 'هل تحتاج مساعدة أخرى؟', action: 'help' }
-                    ]
-                };
-            } else if (action === 'investigator') {
-                botResponse = {
-                    ...botResponse,
-                    text: 'يمكنك عرض قائمة المحققين المتخصصين والحجز معهم مباشرة',
-                    suggestions: [
-                        { text: 'عرض المحققين', action: 'investigators' },
-                        { text: 'معلومات عن الخدمة', action: 'help' }
-                    ]
-                };
-            } else if (action === 'faq_search') {
-                botResponse = {
-                    ...botResponse,
-                    text: 'للبحث عن سيارة: استخدم شريط البحث العلوي، أدخل اسم الماركة أو الموديل أو رقم اللوحة، وسيظهر لك جميع السيارات المطابقة.'
-                };
             }
 
             await saveChatMessage(conversation.id, 'bot', botResponse.text, intent);
@@ -207,6 +267,17 @@ const ChatBot = () => {
                                         background: msg.type === 'user' ? 'var(--accent-primary)' : 'rgba(255,255,255,0.1)',
                                         color: msg.type === 'user' ? 'white' : 'var(--text-primary)'
                                     }}>
+                                        {msg.media && (
+                                            <div style={{ marginBottom: '0.5rem', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+                                                {msg.media.type === 'image' ? (
+                                                    <img src={msg.media.url} alt="Media" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover' }} />
+                                                ) : (
+                                                    <video style={{ width: '100%', maxHeight: '200px', objectFit: 'cover' }} controls>
+                                                        <source src={msg.media.url} />
+                                                    </video>
+                                                )}
+                                            </div>
+                                        )}
                                         <p style={{ marginBottom: msg.suggestions ? '0.75rem' : '0' }}>
                                             {msg.text}
                                         </p>
@@ -293,6 +364,33 @@ const ChatBot = () => {
                             display: 'flex',
                             gap: '0.5rem'
                         }}>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                multiple
+                                accept="image/*,video/*"
+                                onChange={handleMediaUpload}
+                                style={{ display: 'none' }}
+                            />
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={loading}
+                                style={{
+                                    padding: '0.75rem',
+                                    background: 'rgba(255,255,255,0.1)',
+                                    color: 'var(--text-primary)',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: 'var(--radius-sm)',
+                                    cursor: 'pointer',
+                                    opacity: loading ? 0.5 : 1,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '0.25rem'
+                                }}
+                            >
+                                <ImageIcon size={16} />
+                            </button>
                             <input
                                 type="text"
                                 value={inputValue}

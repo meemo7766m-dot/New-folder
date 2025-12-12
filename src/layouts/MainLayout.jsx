@@ -2,7 +2,6 @@ import { Outlet } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { Toaster } from 'react-hot-toast';
-import AIAssistant from '../components/AIAssistant';
 import ChatBot from '../components/ChatBot';
 
 const MainLayout = () => {
@@ -20,7 +19,6 @@ const MainLayout = () => {
                     border: '1px solid rgba(255,255,255,0.1)'
                 }
             }} />
-            <AIAssistant />
             <ChatBot />
         </div>
     );

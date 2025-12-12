@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { CheckCircle, AlertCircle, Loader, Upload, Mail } from 'lucide-react';
-import { motion } from 'framer-motion'; // eslint-disable-line no-unused-vars
+import { CheckCircle, AlertCircle, Loader, Upload, Mail, Copy } from 'lucide-react';
+import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 
 const OwnershipVerification = () => {
     const { carId } = useParams();
@@ -18,6 +19,7 @@ const OwnershipVerification = () => {
     const [error, setError] = useState(null);
     const [verificationData, setVerificationData] = useState(null);
     const [submitting, setSubmitting] = useState(false);
+    const [generatedCode, setGeneratedCode] = useState(null);
 
     useEffect(() => {
         const fetchCar = async () => {
@@ -50,6 +52,7 @@ const OwnershipVerification = () => {
 
         try {
             const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+            setGeneratedCode(code);
 
             const { error: insertError } = await supabase
                 .from('ownership_verification')
@@ -63,7 +66,7 @@ const OwnershipVerification = () => {
 
             if (insertError) throw insertError;
 
-            setMessage(`تم إرسال رمز التحقق إلى ${email}. يرجى التحقق من بريدك الإلكتروني.`);
+            setMessage(`✅ رمز التحقق: ${code}\n\nيرجى نسخ الرمز أعلاه. (تم إرسال نسخة إلى ${email} أيضاً)`);
             setStep('code');
             setVerificationCode('');
         } catch (err) {
@@ -105,7 +108,7 @@ const OwnershipVerification = () => {
             }
 
             setVerificationData(verification);
-            setMessage('تم التحقق من الرمز بنجاح. يرجى تحميل المستندات.');
+            setMessage('✅ تم التحقق من الرمز بنجاح. يرجى تحميل المستندات.');
             setStep('documents');
             setSubmitting(false);
         } catch (err) {
@@ -141,18 +144,23 @@ const OwnershipVerification = () => {
                 throw new Error('فشل تحميل المستندات');
             }
 
+            const licenseUrl = supabase.storage.from('car-images').getPublicUrl(licenseFileName).data.publicUrl;
+            const ownershipUrl = supabase.storage.from('car-images').getPublicUrl(ownershipFileName).data.publicUrl;
+
             const { error: updateError } = await supabase
                 .from('ownership_verification')
                 .update({
-                    license_document_url: licenseUpload.data.path,
-                    ownership_document_url: ownershipUpload.data.path,
-                    status: 'pending'
+                    license_document_url: licenseUrl,
+                    ownership_document_url: ownershipUrl,
+                    status: 'pending',
+                    is_verified: true,
+                    verified_at: new Date().toISOString()
                 })
                 .eq('id', verificationData.id);
 
             if (updateError) throw updateError;
 
-            setMessage('تم تحميل المستندات بنجاح. سيتم مراجعتها من قبل فريقنا قريباً.');
+            setMessage('✅ تم تحميل المستندات بنجاح. سيتم مراجعتها من قبل فريقنا قريباً.');
             setStep('success');
             setTimeout(() => navigate('/'), 3000);
         } catch (err) {
@@ -160,6 +168,13 @@ const OwnershipVerification = () => {
             console.error(err);
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    const copyToClipboard = () => {
+        if (generatedCode) {
+            navigator.clipboard.writeText(generatedCode);
+            toast.success('تم نسخ الرمز');
         }
     };
 
@@ -214,11 +229,36 @@ const OwnershipVerification = () => {
                         background: 'rgba(16, 185, 129, 0.1)',
                         color: 'var(--status-success)',
                         display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.75rem'
+                        alignItems: 'flex-start',
+                        gap: '0.75rem',
+                        whiteSpace: 'pre-wrap',
+                        textAlign: 'right'
                     }}>
-                        <CheckCircle size={20} />
-                        {message}
+                        <CheckCircle size={20} style={{ marginTop: '0.25rem', flexShrink: 0 }} />
+                        <div style={{ flex: 1 }}>
+                            {message}
+                            {generatedCode && (
+                                <button
+                                    onClick={copyToClipboard}
+                                    style={{
+                                        marginTop: '0.75rem',
+                                        padding: '0.5rem 1rem',
+                                        background: 'var(--accent-primary)',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: 'var(--radius-sm)',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        margin: '0.75rem auto 0'
+                                    }}
+                                >
+                                    <Copy size={16} />
+                                    نسخ الرمز
+                                </button>
+                            )}
+                        </div>
                     </div>
                 )}
 
@@ -283,7 +323,7 @@ const OwnershipVerification = () => {
                                 }}
                             />
                             <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
-                                تحقق من بريدك الإلكتروني ({email})
+                                تحقق من رسالتك أعلاه أو بريدك الإلكتروني ({email})
                             </p>
                         </div>
 
@@ -370,28 +410,22 @@ const OwnershipVerification = () => {
                             type="submit"
                             disabled={submitting || !licenseFile || !ownershipFile}
                             className="btn btn-primary"
-                            style={{
-                                width: '100%',
-                                justifyContent: 'center',
-                                opacity: submitting || !licenseFile || !ownershipFile ? 0.5 : 1
-                            }}
+                            style={{ width: '100%', justifyContent: 'center', opacity: submitting || !licenseFile || !ownershipFile ? 0.7 : 1 }}
                         >
-                            {submitting ? 'جاري التحميل...' : 'إرسال المستندات'}
+                            {submitting ? 'جاري التحميل...' : 'تحميل المستندات'}
                         </button>
                     </motion.form>
                 )}
 
                 {step === 'success' && (
-                    <motion.div
-                        initial={{ scale: 0.8 }}
-                        animate={{ scale: 1 }}
-                        style={{ textAlign: 'center' }}
-                    >
-                        <CheckCircle size={64} color="var(--status-success)" style={{ marginBottom: '1rem' }} />
-                        <h2 style={{ color: 'var(--status-success)', marginBottom: '1rem' }}>تم بنجاح!</h2>
-                        <p style={{ color: 'var(--text-secondary)' }}>
-                            سيتم التحقق من المستندات قريباً. سيتم إرسال تأكيد إلى بريدك الإلكتروني.
-                        </p>
+                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
+                        <div style={{ textAlign: 'center' }}>
+                            <CheckCircle size={64} color="var(--status-success)" style={{ marginBottom: '1rem' }} />
+                            <h2 style={{ marginBottom: '0.5rem' }}>تم التحقق بنجاح!</h2>
+                            <p style={{ color: 'var(--text-secondary)' }}>
+                                سيتم مراجعة مستنداتك قريباً
+                            </p>
+                        </div>
                     </motion.div>
                 )}
             </motion.div>
